@@ -51,9 +51,10 @@ export default function ServerRack({ position, servers }: ServerRackProps) {
 
       {/* Servers in the Rack */}
       {servers.map((server) => {
-        // unit_position is 1-indexed from bottom to top usually, or top to bottom.
-        // Let's do bottom to top. 1U is at the bottom.
-        const yPos = (server.unit_position - 1) * UNIT_HEIGHT + (UNIT_HEIGHT / 2);
+        // unit_position is 1-indexed from bottom to top
+        // For a multi-U server, we start from unit_position and go up unit_size units.
+        const unitHeight = server.unit_size * UNIT_HEIGHT;
+        const yPos = (server.unit_position - 1) * UNIT_HEIGHT + (unitHeight / 2);
         
         return (
           <ServerUnit 
@@ -61,6 +62,7 @@ export default function ServerRack({ position, servers }: ServerRackProps) {
             position={[0, yPos, 0]} 
             status={server.status}
             name={server.name}
+            unit_size={server.unit_size}
           />
         );
       })}

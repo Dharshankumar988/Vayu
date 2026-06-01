@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Globe, Server, Activity, ShieldAlert, Cpu, LogOut, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import GlobeView from "@/components/3d/Layer1/GlobeView";
@@ -27,6 +27,14 @@ export default function Home() {
 
   if (!mounted) return null;
 
+  const filteredDataCenters = useMemo(() => {
+    if (!user) return [];
+    if (user.role === 'admin') return MOCK_DATA_CENTERS;
+    if (user.role === 'provider') return MOCK_DATA_CENTERS.filter(dc => dc.provider === user.company_name);
+    if (user.role === 'client') return MOCK_DATA_CENTERS.filter(dc => dc.clients?.includes(user.company_name));
+    return [];
+  }, [user]);
+
   return (
     <main className="relative w-screen h-screen bg-black overflow-hidden flex flex-col items-center justify-center">
       {/* Background Grid Pattern */}
@@ -36,7 +44,7 @@ export default function Home() {
       <div className={`relative z-10 flex flex-col items-center pointer-events-none transition-all duration-1000 ${user ? 'mb-0 mt-8 absolute top-0' : 'mb-10'}`}>
         <div className="absolute w-96 h-96 bg-neon-blue/20 rounded-full blur-[100px] -z-10 animate-pulse" />
         <h1 className={`font-bold tracking-tight text-white mb-2 text-glow transition-all duration-1000 ${user ? 'text-4xl' : 'text-7xl'}`}>VAYU</h1>
-        <p className={`text-gray-400 font-light tracking-widest uppercase transition-all duration-1000 ${user ? 'text-sm' : 'text-xl'}`}>Global Cloud Digital Twin</p>
+        {/* The Global Cloud Digital Twin subtitle has been removed per user request */}
       </div>
 
       {/* Login Panel */}
@@ -142,7 +150,7 @@ export default function Home() {
 
       {/* 3D Canvas Switcher */}
       <div className="absolute inset-0 z-0">
-        {viewLayer === 0 && <GlobeView dataCenters={MOCK_DATA_CENTERS} onDataCenterClick={() => setViewLayer(1)} />}
+        {viewLayer === 0 && <GlobeView dataCenters={filteredDataCenters} onDataCenterClick={() => setViewLayer(1)} />}
         {viewLayer === 1 && <Layer2Regional />}
         {viewLayer === 2 && <DataCenterInterior />}
       </div>

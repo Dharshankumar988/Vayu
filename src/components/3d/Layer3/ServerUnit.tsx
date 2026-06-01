@@ -8,9 +8,10 @@ interface ServerUnitProps {
   position: [number, number, number];
   status: 'active' | 'idle' | 'offline' | 'provisioning';
   name: string;
+  unit_size: number;
 }
 
-export default function ServerUnit({ position, status, name }: ServerUnitProps) {
+export default function ServerUnit({ position, status, name, unit_size }: ServerUnitProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const lightRef = useRef<THREE.PointLight>(null);
 
@@ -34,11 +35,14 @@ export default function ServerUnit({ position, status, name }: ServerUnitProps) 
     }
   });
 
+  const UNIT_HEIGHT = 0.25;
+  const height = unit_size * UNIT_HEIGHT - 0.05;
+
   return (
     <group position={position}>
       {/* Server Chassis */}
       <mesh ref={meshRef}>
-        <boxGeometry args={[1.9, 0.2, 2.5]} />
+        <boxGeometry args={[1.9, height, 2.5]} />
         <meshStandardMaterial 
           color={colors.body} 
           metalness={0.8} 
@@ -48,7 +52,7 @@ export default function ServerUnit({ position, status, name }: ServerUnitProps) 
       
       {/* Front Panel detail */}
       <mesh position={[0, 0, 1.26]}>
-        <planeGeometry args={[1.8, 0.18]} />
+        <planeGeometry args={[1.8, height - 0.02]} />
         <meshStandardMaterial color="#050508" />
       </mesh>
 

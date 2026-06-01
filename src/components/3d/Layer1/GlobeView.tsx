@@ -15,6 +15,8 @@ export interface DataCenter {
   lng: number;
   status: 'operational' | 'degraded' | 'offline';
   size: number;
+  provider?: string;
+  clients?: string[];
 }
 
 export interface GlobeViewProps {
@@ -56,16 +58,24 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
     <div className="absolute inset-0 cursor-grab active:cursor-grabbing">
       <Globe
         ref={globeRef}
-        // Globe styling
+        onGlobeReady={() => {
+          if (globeRef.current) {
+            globeRef.current.controls().autoRotate = true;
+            globeRef.current.controls().autoRotateSpeed = 0.5;
+            globeRef.current.controls().enableDamping = true;
+            globeRef.current.pointOfView({ altitude: 2.2 }, 3000);
+          }
+        }}
+        // Globe styling - deep cyber theme
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
         
-        // Data Centers (Cylindrical Rods)
+        // Data Centers (High-tech Glowing Cylinders)
         customLayerData={dataCenters}
         customThreeObject={(d: any) => {
-          const height = d.size * 2;
-          const geometry = new THREE.CylinderGeometry(0.8, 0.8, height, 16);
+          const height = d.size * 4; // Taller for better visibility
+          const geometry = new THREE.CylinderGeometry(0.3, 0.3, height, 32); // Thinner and smoother
           // Rotate to align with Z axis (pointing outwards from globe)
           geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI / 2));
           // Translate so base is on the globe surface
@@ -75,37 +85,53 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
           if (d.status === 'offline') color = '#ff0055';
           if (d.status === 'degraded') color = '#ffaa00';
           
-          const material = new THREE.MeshLambertMaterial({ 
+          // Use Physical material for premium glass/glow feel
+          const material = new THREE.MeshPhysicalMaterial({ 
             color: color, 
             transparent: true, 
             opacity: 0.8,
             emissive: color,
-            emissiveIntensity: 0.5
+            emissiveIntensity: 1.5,
+            roughness: 0.1,
+            metalness: 0.8,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
           });
           
           return new THREE.Mesh(geometry, material);
         }}
-        customThreeObjectUpdate={(obj: any, d: any) => {
-          // You could animate height here if needed
-        }}
         onCustomLayerClick={(point: any) => onDataCenterClick?.(point as DataCenter)}
         
-        // Disable old points
-        pointsData={[]}
+        // Labels for Data Centers
+        labelsData={dataCenters}
+        labelLat={(d: any) => d.lat}
+        labelLng={(d: any) => d.lng}
+        labelText={(d: any) => ` ${d.name} `}
+        labelSize={(d: any) => 1.2}
+        labelDotRadius={0.3}
+        labelColor={(d: any) => {
+          if (d.status === 'offline') return '#ff0055';
+          if (d.status === 'degraded') return '#ffaa00';
+          return '#00ff66';
+        }}
+        labelResolution={2}
+        labelAltitude={(d: any) => (d.size * 4) / 100 + 0.05} // Float just above the cylinder
         
-        // Traffic (Arcs)
+        // Traffic (Arcs) - Smooth, glowing neon energy lines
         arcsData={arcsData}
         arcStartLat="startLat"
         arcStartLng="startLng"
         arcEndLat="endLat"
         arcEndLng="endLng"
         arcColor="color"
-        arcDashLength={0.4}
-        arcDashGap={4}
+        arcDashLength={0.6}
+        arcDashGap={1.5}
         arcDashInitialGap={() => Math.random() * 5}
-        arcDashAnimateTime={1000}
+        arcDashAnimateTime={1200}
+        arcStroke={0.4}
+        arcAltitudeAutoScale={0.4}
         
-        // Rings around points to make them glow
+        // Rings around points to make them pulsate
         ringsData={dataCenters}
         ringLat="lat"
         ringLng="lng"
@@ -114,12 +140,13 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
           if (d.status === 'degraded') return '#ffaa00';
           return '#00f3ff';
         }}
-        ringMaxRadius={(d: any) => d.size * 6}
-        ringPropagationSpeed={2.5}
-        ringRepeatPeriod={800}
+        ringMaxRadius={(d: any) => d.size * 8}
+        ringPropagationSpeed={2}
+        ringRepeatPeriod={1000}
 
-        atmosphereColor="#00f3ff"
-        atmosphereAltitude={0.25}
+        // Atmosphere
+        atmosphereColor="#0055ff" // Deep neon blue atmosphere
+        atmosphereAltitude={0.15} // Tighter glowing halo
         
         // Styling options
         width={typeof window !== 'undefined' ? window.innerWidth : 800}

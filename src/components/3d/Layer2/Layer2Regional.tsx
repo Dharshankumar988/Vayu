@@ -33,8 +33,8 @@ export default function Layer2Regional() {
         // Create a small curve or just straight line for the fiber connection
         arr.push({
           points: [
-            new THREE.Vector3(...start.position),
-            new THREE.Vector3(...end.position)
+            start.position as [number, number, number],
+            end.position as [number, number, number]
           ],
           color: start.status === 'offline' || end.status === 'offline' ? '#330011' : '#00f3ff'
         });
