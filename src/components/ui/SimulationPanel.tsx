@@ -7,8 +7,8 @@ import { supabase } from "@/lib/supabase";
 
 type AISystem = 'Traffic Optimizer' | 'Threat Defense' | 'Allocation' | 'Cost Efficiency';
 
-export default function SimulationPanel({ onClose }: { onClose: () => void }) {
-  const [activeSystem, setActiveSystem] = useState<AISystem>('Traffic Optimizer');
+export default function SimulationPanel({ onClose, defaultSystem }: { onClose: () => void, defaultSystem?: AISystem }) {
+  const [activeSystem, setActiveSystem] = useState<AISystem>(defaultSystem || 'Traffic Optimizer');
   const [loading, setLoading] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [executed, setExecuted] = useState(false);

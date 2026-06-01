@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { Globe, Server, Activity, ShieldAlert, Cpu, LogOut, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import GlobeView from "@/components/3d/Layer1/GlobeView";
+import Layer2Regional from "@/components/3d/Layer2/Layer2Regional";
 import DataCenterInterior from "@/components/3d/Layer3/DataCenterInterior";
 import { MOCK_DATA_CENTERS } from "@/lib/mockData";
 import { useAppStore } from "@/store";
 import LoginPanel from "@/components/ui/LoginPanel";
 import SimulationPanel from "@/components/ui/SimulationPanel";
+import { Map } from "lucide-react";
 
 export default function Home() {
   const user = useAppStore((state) => state.user);
@@ -17,7 +19,7 @@ export default function Home() {
   const setViewLayer = useAppStore((state) => state.setViewLayer);
   
   const [mounted, setMounted] = useState(false);
-  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [activeAiSystem, setActiveAiSystem] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -43,8 +45,8 @@ export default function Home() {
       )}
 
       {/* Simulation Panel */}
-      {user && user.role === 'admin' && isSimulatorOpen && (
-        <SimulationPanel onClose={() => setIsSimulatorOpen(false)} />
+      {user && activeAiSystem && (
+        <SimulationPanel defaultSystem={activeAiSystem} onClose={() => setActiveAiSystem(null)} />
       )}
 
       {/* Authenticated User HUD */}
@@ -86,6 +88,14 @@ export default function Home() {
             </div>
             <div className="w-px h-10 bg-white/10" />
             <div 
+              onClick={() => setViewLayer(1)}
+              className={`flex flex-col items-center gap-2 cursor-pointer transition-colors ${viewLayer === 1 ? 'text-neon-green' : 'text-gray-400 hover:text-neon-green'}`}
+            >
+              <Map className="w-6 h-6" />
+              <span className="text-xs uppercase">Regional View</span>
+            </div>
+            <div className="w-px h-10 bg-white/10" />
+            <div 
               onClick={() => setViewLayer(2)}
               className={`flex flex-col items-center gap-2 cursor-pointer transition-colors ${viewLayer === 2 ? 'text-neon-purple' : 'text-gray-400 hover:text-neon-purple'}`}
             >
@@ -94,26 +104,31 @@ export default function Home() {
             </div>
             <div className="w-px h-10 bg-white/10" />
             
-            {user.role === 'admin' && (
+            {(user.role === 'admin' || user.role === 'provider') && (
               <>
+                {user.role === 'admin' && (
+                  <>
+                    <div 
+                      onClick={() => setActiveAiSystem('Traffic Optimizer')}
+                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-green transition-colors text-gray-400"
+                    >
+                      <Activity className="w-6 h-6" />
+                      <span className="text-xs uppercase">Traffic Optimizer</span>
+                    </div>
+                    <div className="w-px h-10 bg-white/10" />
+                    <div 
+                      onClick={() => setActiveAiSystem('Threat Defense')}
+                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-red transition-colors text-gray-400"
+                    >
+                      <ShieldAlert className="w-6 h-6" />
+                      <span className="text-xs uppercase">Threat Defense</span>
+                    </div>
+                    <div className="w-px h-10 bg-white/10" />
+                  </>
+                )}
+                
                 <div 
-                  onClick={() => setIsSimulatorOpen(true)}
-                  className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-green transition-colors text-gray-400"
-                >
-                  <Activity className="w-6 h-6" />
-                  <span className="text-xs uppercase">Traffic Optimizer</span>
-                </div>
-                <div className="w-px h-10 bg-white/10" />
-                <div 
-                  onClick={() => setIsSimulatorOpen(true)}
-                  className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-red transition-colors text-gray-400"
-                >
-                  <ShieldAlert className="w-6 h-6" />
-                  <span className="text-xs uppercase">Threat Defense</span>
-                </div>
-                <div className="w-px h-10 bg-white/10" />
-                <div 
-                  onClick={() => setIsSimulatorOpen(true)}
+                  onClick={() => setActiveAiSystem('Cost Efficiency')}
                   className="flex flex-col items-center gap-2 cursor-pointer hover:text-white transition-colors text-gray-400"
                 >
                   <Cpu className="w-6 h-6" />
@@ -127,7 +142,8 @@ export default function Home() {
 
       {/* 3D Canvas Switcher */}
       <div className="absolute inset-0 z-0">
-        {viewLayer === 0 && <GlobeView dataCenters={MOCK_DATA_CENTERS} onDataCenterClick={() => setViewLayer(2)} />}
+        {viewLayer === 0 && <GlobeView dataCenters={MOCK_DATA_CENTERS} onDataCenterClick={() => setViewLayer(1)} />}
+        {viewLayer === 1 && <Layer2Regional />}
         {viewLayer === 2 && <DataCenterInterior />}
       </div>
     </main>

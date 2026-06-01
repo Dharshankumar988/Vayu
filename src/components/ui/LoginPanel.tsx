@@ -26,7 +26,7 @@ export default function LoginPanel() {
         .select('*')
         .eq('email', email)
         .eq('password', password)
-        .single();
+        .maybeSingle();
 
       if (dbError || !data) {
         console.error("Login Error:", dbError);
