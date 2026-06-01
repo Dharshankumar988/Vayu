@@ -22,7 +22,7 @@ export interface GlobeViewProps {
 }
 
 export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewProps) {
-  const globeRef = useRef<any>();
+  const globeRef = useRef<any>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
