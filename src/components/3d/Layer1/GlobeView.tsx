@@ -72,7 +72,7 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
         pointRadius={(d: any) => d.size * 1.5}
         pointsMerge={false}
         pointResolution={32}
-        onPointClick={onDataCenterClick}
+        onPointClick={(point) => onDataCenterClick?.(point as DataCenter)}
         
         // Traffic (Arcs)
         arcsData={arcsData}
