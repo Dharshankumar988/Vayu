@@ -2,18 +2,22 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, ShieldAlert, Cpu, Bot, X, CheckCircle, AlertTriangle } from "lucide-react";
+import { Activity, ShieldAlert, Cpu, Bot, X, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 type AISystem = 'Traffic Optimizer' | 'Threat Defense' | 'Allocation' | 'Cost Efficiency';
 
 export default function SimulationPanel({ onClose }: { onClose: () => void }) {
   const [activeSystem, setActiveSystem] = useState<AISystem>('Traffic Optimizer');
   const [loading, setLoading] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [executed, setExecuted] = useState(false);
   const [result, setResult] = useState<{ decision: string; explanation: string; confidence: string } | null>(null);
   
   const handleSimulate = async () => {
     setLoading(true);
     setResult(null);
+    setExecuted(false);
     
     // Mock Context based on selected system
     let context = {};
@@ -45,6 +49,37 @@ export default function SimulationPanel({ onClose }: { onClose: () => void }) {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExecute = async () => {
+    if (!result) return;
+    setExecuting(true);
+    
+    try {
+      const { error } = await supabase.from('ai_logs').insert([{
+        system_type: activeSystem,
+        decision: result.decision,
+        explanation: result.explanation,
+        confidence: parseFloat(result.confidence),
+        action_taken: true
+      }]);
+      
+      if (error) console.error("Failed to log AI action:", error);
+      
+      // Simulate physical action delay
+      await new Promise(r => setTimeout(r, 1500));
+      
+      setExecuted(true);
+      setTimeout(() => {
+        setExecuted(false);
+        setResult(null);
+        onClose();
+      }, 2500);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setExecuting(false);
     }
   };
 
@@ -128,9 +163,25 @@ export default function SimulationPanel({ onClose }: { onClose: () => void }) {
               <span className="text-xs text-gray-500 uppercase mb-1 block">Explanation</span>
               <p className="text-sm text-gray-300 leading-relaxed">{result.explanation}</p>
             </div>
-            <button className="w-full py-2 mt-2 rounded border border-neon-green text-neon-green hover:bg-neon-green/10 text-xs font-semibold uppercase transition-colors">
-              Approve & Execute
-            </button>
+            
+            {executed ? (
+              <div className="w-full py-2 mt-2 rounded border border-neon-green/50 bg-neon-green/10 text-neon-green text-xs font-semibold uppercase flex items-center justify-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Action Executed
+              </div>
+            ) : (
+              <button 
+                onClick={handleExecute}
+                disabled={executing}
+                className="w-full py-2 mt-2 rounded border border-neon-green text-neon-green hover:bg-neon-green/10 text-xs font-semibold uppercase transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {executing ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Executing...</>
+                ) : (
+                  "Approve & Execute"
+                )}
+              </button>
+            )}
           </motion.div>
         )}
       </div>

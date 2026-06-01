@@ -29,7 +29,8 @@ export default function LoginPanel() {
         .single();
 
       if (dbError || !data) {
-        setError("Invalid email or password");
+        console.error("Login Error:", dbError);
+        setError(dbError?.message ? `Database Error: ${dbError.message}` : "Invalid email or password");
         setLoading(false);
         return;
       }
