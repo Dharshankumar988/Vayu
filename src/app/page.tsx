@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Globe, Server, Activity, ShieldAlert, Cpu, LogOut, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import GlobeView from "@/components/3d/Layer1/GlobeView";
