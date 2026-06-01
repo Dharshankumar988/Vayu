@@ -101,7 +101,7 @@ create table public.client_region_policies (
 
 -- Seed Users
 INSERT INTO public.users (id, email, password, role, company_name, full_name) VALUES
-  ('a1b2c3d4-0000-0000-0000-000000000001', 'admin1@vayu.com', 'admin123', 'admin', 'Vayu Global', 'System Admin Alpha'),
+  ('a1b2c3d4-0000-0000-0000-000000000001', 'admin1@vayu.com', 'admin123', 'admin', 'Vayu Global', 'System Admin'),
   ('a1b2c3d4-0000-0000-0000-000000000002', 'admin2@vayu.com', 'admin123', 'admin', 'Vayu Global', 'System Admin Beta'),
   ('a1b2c3d4-0000-0000-0000-000000000003', 'client1@stark.com', 'client123', 'client', 'Stark Industries', 'Tony Stark'),
   ('a1b2c3d4-0000-0000-0000-000000000004', 'client2@wayne.com', 'client123', 'client', 'Wayne Enterprises', 'Bruce Wayne'),
