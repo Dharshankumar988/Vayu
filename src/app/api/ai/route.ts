@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+// Instantiate lazily inside the handler to prevent build errors on Vercel if GROQ_API_KEY is missing during build time.
+let groq: Groq | null = null;
 
 export async function POST(req: Request) {
   try {
+    if (!groq) {
+      // Allow fallback if no API key is provided
+      if (!process.env.GROQ_API_KEY) {
+        // We'll mock the response if no key is available
+      } else {
+        groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      }
+    }
+
     const { systemType, context, prompt } = await req.json();
 
     if (!systemType || !prompt) {
