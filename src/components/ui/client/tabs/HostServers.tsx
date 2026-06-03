@@ -166,7 +166,7 @@ export default function HostServers() {
             <label className="section-header block mb-2">Card Number (Mock)</label>
             <div className="relative">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input className="input-light pl-10" placeholder="4242 4242 4242 4242" />
+              <input className="input-light !pl-10" placeholder="4242 4242 4242 4242" />
             </div>
           </div>
 

@@ -181,7 +181,7 @@ export default function LoginPanel() {
                   placeholder={loginType === 'admin' ? 'admin@vayu.com' : 'your@email.com'}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-light pl-10"
+                  className="input-light !pl-10"
                   required
                 />
               </div>
@@ -198,7 +198,7 @@ export default function LoginPanel() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-light pl-10 pr-10"
+                  className="input-light !pl-10 pr-10"
                   required
                 />
                 <button
