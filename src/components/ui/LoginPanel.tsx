@@ -270,8 +270,9 @@ export default function LoginPanel() {
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-3 bg-slate-50 border-t border-slate-100 text-center">
+        <div className="px-8 py-3 bg-slate-50 border-t border-slate-100 text-center space-y-1">
           <p className="text-xs text-slate-400">Vayu Cloud Infrastructure Management System v2.0</p>
+          <p className="text-[10px] text-slate-400">© Designed by Dharshan Kumar B</p>
         </div>
       </motion.div>
     </div>

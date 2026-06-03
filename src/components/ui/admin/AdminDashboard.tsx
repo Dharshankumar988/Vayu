@@ -97,11 +97,12 @@ export default function AdminDashboard() {
             </div>
             <button
               onClick={() => setUser(null)}
-              className="w-full flex items-center gap-2 text-xs text-slate-400 hover:text-red-500 transition-colors py-1"
+              className="w-full flex items-center gap-2 text-xs text-slate-400 hover:text-red-500 transition-colors py-1 mb-2"
             >
               <LogOut className="w-3.5 h-3.5" />
               Sign out
             </button>
+            <p className="text-[9px] text-slate-400 text-center mt-2 border-t border-slate-50 pt-2">© Designed by Dharshan Kumar B</p>
           </div>
         )}
 

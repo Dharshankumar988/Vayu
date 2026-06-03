@@ -91,6 +91,11 @@ export default function ClientDashboard() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Footer */}
+      <div className="py-1.5 text-center bg-white border-t border-slate-200 flex-shrink-0">
+        <p className="text-[10px] text-slate-400">© Designed by Dharshan Kumar B</p>
+      </div>
     </div>
   );
 }
