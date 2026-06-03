@@ -8,8 +8,10 @@ import Layer2Regional from "@/components/3d/Layer2/Layer2Regional";
 import DataCenterInterior from "@/components/3d/Layer3/DataCenterInterior";
 import { MOCK_DATA_CENTERS } from "@/lib/mockData";
 import { useAppStore } from "@/store";
+import { useSimulationStore } from "@/store/simulationStore";
 import LoginPanel from "@/components/ui/LoginPanel";
 import SimulationPanel from "@/components/ui/SimulationPanel";
+import AdminCapacityPanel from "@/components/ui/AdminCapacityPanel";
 import { Map } from "lucide-react";
 
 export default function Home() {
@@ -17,13 +19,21 @@ export default function Home() {
   const setUser = useAppStore((state) => state.setUser);
   const viewLayer = useAppStore((state) => state.viewLayer);
   const setViewLayer = useAppStore((state) => state.setViewLayer);
+  const updateSimulation = useSimulationStore((state) => state.updateSimulation);
   
   const [mounted, setMounted] = useState(false);
   const [activeAiSystem, setActiveAiSystem] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    
+    // Simulation Engine Loop
+    const interval = setInterval(() => {
+      updateSimulation(1);
+    }, 2000);
+    
+    return () => clearInterval(interval);
+  }, [updateSimulation]);
 
   if (!mounted) return null;
 
@@ -36,15 +46,15 @@ export default function Home() {
   }, [user]);
 
   return (
-    <main className="relative w-screen h-screen bg-black overflow-hidden flex flex-col items-center justify-center">
-      {/* Background Grid Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
+    <main className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-[#070715]">
+      {/* Background Grid Pattern - Brighter Cyber Theme */}
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,243,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.05)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,243,255,0.1)_0%,transparent_70%)] pointer-events-none" />
       
       {/* Central Title and Glow */}
       <div className={`relative z-10 flex flex-col items-center pointer-events-none transition-all duration-1000 ${user ? 'mb-0 mt-8 absolute top-0' : 'mb-10'}`}>
-        <div className="absolute w-96 h-96 bg-neon-blue/20 rounded-full blur-[100px] -z-10 animate-pulse" />
+        <div className="absolute w-96 h-96 bg-neon-blue/30 rounded-full blur-[120px] -z-10 animate-pulse" />
         <h1 className={`font-bold tracking-tight text-white mb-2 text-glow transition-all duration-1000 ${user ? 'text-4xl' : 'text-7xl'}`}>VAYU</h1>
-        {/* The Global Cloud Digital Twin subtitle has been removed per user request */}
       </div>
 
       {/* Login Panel */}
@@ -53,8 +63,13 @@ export default function Home() {
       )}
 
       {/* Simulation Panel */}
-      {user && activeAiSystem && (
+      {user && activeAiSystem && user.role === 'admin' && (
         <SimulationPanel defaultSystem={activeAiSystem} onClose={() => setActiveAiSystem(null)} />
+      )}
+      
+      {/* Admin Capacity Panel (Visible in Regional View) */}
+      {user && user.role === 'admin' && viewLayer === 1 && (
+        <AdminCapacityPanel />
       )}
 
       {/* Authenticated User HUD */}
@@ -132,16 +147,23 @@ export default function Home() {
                       <span className="text-xs uppercase">Threat Defense</span>
                     </div>
                     <div className="w-px h-10 bg-white/10" />
+                    <div 
+                      onClick={() => setActiveAiSystem('Allocation')}
+                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-blue transition-colors text-gray-400"
+                    >
+                      <Server className="w-6 h-6" />
+                      <span className="text-xs uppercase">DC Allocation</span>
+                    </div>
+                    <div className="w-px h-10 bg-white/10" />
+                    <div 
+                      onClick={() => setActiveAiSystem('Cost Efficiency')}
+                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-white transition-colors text-gray-400"
+                    >
+                      <Cpu className="w-6 h-6" />
+                      <span className="text-xs uppercase">Cost Efficiency</span>
+                    </div>
                   </>
                 )}
-                
-                <div 
-                  onClick={() => setActiveAiSystem('Cost Efficiency')}
-                  className="flex flex-col items-center gap-2 cursor-pointer hover:text-white transition-colors text-gray-400"
-                >
-                  <Cpu className="w-6 h-6" />
-                  <span className="text-xs uppercase">Cost Efficiency</span>
-                </div>
               </>
             )}
           </motion.div>

@@ -51,6 +51,8 @@ export default function ServerRack({ position, servers }: ServerRackProps) {
 
       {/* Servers in the Rack */}
       {servers.map((server) => {
+        if (server.name === "Restricted") return null;
+        
         // unit_position is 1-indexed from bottom to top
         // For a multi-U server, we start from unit_position and go up unit_size units.
         const unitHeight = server.unit_size * UNIT_HEIGHT;

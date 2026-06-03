@@ -2,8 +2,10 @@
 
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Line, Sphere, Text } from "@react-three/drei";
-import { Suspense, useMemo } from "react";
+import { Suspense, useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { useSimulationStore } from "@/store/simulationStore";
 
 // Mock regional nodes for Layer 2 (e.g. US East Region mapping)
 const REGIONAL_NODES = [
@@ -15,33 +17,67 @@ const REGIONAL_NODES = [
 ];
 
 const REGIONAL_CONNECTIONS = [
-  ["n1", "n2"],
-  ["n1", "n3"],
-  ["n1", "n4"],
-  ["n2", "n5"],
-  ["n3", "n5"],
+  ["us-east", "us-west"],
+  ["us-east", "eu-central"],
+  ["eu-central", "ap-tokyo"],
+  ["us-west", "ap-tokyo"],
 ];
 
-export default function Layer2Regional() {
-  
+function ConnectionLines({ nodes }: { nodes: any[] }) {
   const lines = useMemo(() => {
     const arr = [];
     for (const [startId, endId] of REGIONAL_CONNECTIONS) {
-      const start = REGIONAL_NODES.find(n => n.id === startId);
-      const end = REGIONAL_NODES.find(n => n.id === endId);
+      const start = nodes.find(n => n.id === startId);
+      const end = nodes.find(n => n.id === endId);
       if (start && end) {
-        // Create a small curve or just straight line for the fiber connection
         arr.push({
           points: [
             start.position as [number, number, number],
             end.position as [number, number, number]
           ],
-          color: start.status === 'offline' || end.status === 'offline' ? '#330011' : '#00f3ff'
+          color: start.status === 'offline' || end.status === 'offline' ? '#ff0055' : '#00f3ff'
         });
       }
     }
     return arr;
-  }, []);
+  }, [nodes]);
+
+  return (
+    <>
+      {lines.map((line, i) => (
+        <Line 
+          key={i} 
+          points={line.points} 
+          color={line.color} 
+          lineWidth={2} 
+          transparent 
+          opacity={0.3} 
+        />
+      ))}
+    </>
+  );
+}
+
+export default function Layer2Regional() {
+  const regions = useSimulationStore((state) => state.regions);
+
+  const activeNodes = useMemo(() => {
+    // Map simulation store regions to 3D positions
+    const posMap: Record<string, [number, number, number]> = {
+      "us-east": [-4, 0, -2],
+      "us-west": [-8, 0, 2],
+      "eu-central": [0, 0, -4],
+      "ap-tokyo": [8, 0, 0],
+    };
+    
+    return Object.values(regions).map(r => ({
+      ...r,
+      position: posMap[r.id] || [0, 0, 0],
+      status: r.trafficAnomaly ? 'degraded' : (r.load > 0.9 ? 'offline' : 'operational')
+    }));
+  }, [regions]);
+  
+
 
   return (
     <div className="absolute inset-0 z-0 bg-black">
@@ -55,30 +91,19 @@ export default function Layer2Regional() {
         />
         
         {/* Atmosphere / Lighting */}
-        <color attach="background" args={['#030305']} />
-        <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 20, 10]} intensity={1} color="#00f3ff" />
+        <color attach="background" args={['#070715']} />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[10, 20, 10]} intensity={1.5} color="#00f3ff" />
 
         <Suspense fallback={null}>
           <group position={[0, -2, 0]}>
             {/* Cyber Grid Floor */}
-            <gridHelper args={[100, 50, '#1c1c24', '#0a0a0f']} position={[0, -0.1, 0]} />
+            <gridHelper args={[100, 50, '#00f3ff', '#0a0a0f']} position={[0, -0.1, 0]} />
             
-            {/* Connection Lines */}
-            {lines.map((line, i) => (
-              <Line 
-                key={i} 
-                points={line.points} 
-                color={line.color} 
-                lineWidth={3} 
-                dashed={false} 
-                transparent 
-                opacity={0.6} 
-              />
-            ))}
+            <ConnectionLines nodes={activeNodes} />
 
             {/* Regional Nodes */}
-            {REGIONAL_NODES.map((node) => {
+            {activeNodes.map((node) => {
               let color = '#00ff66';
               if (node.status === 'offline') color = '#ff0055';
               if (node.status === 'degraded') color = '#ffaa00';
@@ -104,8 +129,8 @@ export default function Layer2Regional() {
 
                   {/* Node Label */}
                   <Text 
-                    position={[0, 1.2, 0]} 
-                    fontSize={0.4} 
+                    position={[0, 1.5, 0]} 
+                    fontSize={0.5} 
                     color="#ffffff" 
                     anchorX="center" 
                     anchorY="middle"

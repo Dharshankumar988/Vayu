@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, ShieldAlert, Cpu, Bot, X, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { Bot, X, CheckCircle, AlertTriangle, Loader2, Activity, ShieldAlert, Cpu, Server } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useSimulationStore } from "@/store/simulationStore";
 
 type AISystem = 'Traffic Optimizer' | 'Threat Defense' | 'Allocation' | 'Cost Efficiency';
 
@@ -13,6 +14,10 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
   const [executing, setExecuting] = useState(false);
   const [executed, setExecuted] = useState(false);
   const [result, setResult] = useState<{ decision: string; explanation: string; confidence: string } | null>(null);
+  
+  const mitigateThreat = useSimulationStore((state) => state.mitigateThreat);
+  const optimizeTraffic = useSimulationStore((state) => state.optimizeTraffic);
+  const consolidateResources = useSimulationStore((state) => state.consolidateResources);
   
   const handleSimulate = async () => {
     setLoading(true);
@@ -29,6 +34,9 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
     } else if (activeSystem === 'Threat Defense') {
       context = { "AP-Tokyo": "Anomalous traffic spike, 500k req/s from unknown IPs" };
       prompt = "Detect if this is a DDoS attack and suggest mitigation steps.";
+    } else if (activeSystem === 'Allocation') {
+      context = { "US-West": "Adding 500 new bare metal instances" };
+      prompt = "Determine the best racks to allocate these servers to balance cooling and power.";
     } else if (activeSystem === 'Cost Efficiency') {
       context = { "SA-East": "15% Load, 50 idle servers", "AF-South": "Offline" };
       prompt = "Analyze resource utilization and suggest consolidation.";
@@ -70,6 +78,15 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
       // Simulate physical action delay
       await new Promise(r => setTimeout(r, 1500));
       
+      // Hook into the Simulation Engine
+      if (activeSystem === 'Traffic Optimizer') {
+        optimizeTraffic();
+      } else if (activeSystem === 'Threat Defense') {
+        mitigateThreat('ap-tokyo'); // Mocking specific region for now
+      } else if (activeSystem === 'Cost Efficiency') {
+        consolidateResources();
+      }
+      
       setExecuted(true);
       setTimeout(() => {
         setExecuted(false);
@@ -102,7 +119,7 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
       
       <div className="p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
         <div className="flex flex-wrap gap-2">
-          {['Traffic Optimizer', 'Threat Defense', 'Cost Efficiency'].map((sys) => (
+          {['Traffic Optimizer', 'Threat Defense', 'Allocation', 'Cost Efficiency'].map((sys) => (
             <button
               key={sys}
               onClick={() => { setActiveSystem(sys as AISystem); setResult(null); }}
@@ -122,6 +139,7 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
           <p className="text-sm text-gray-300">
             {activeSystem === 'Traffic Optimizer' && "High load detected in US-East. EU-Central has excess capacity."}
             {activeSystem === 'Threat Defense' && "Massive anomalous traffic spike detected in AP-Tokyo region."}
+            {activeSystem === 'Allocation' && "New capacity request: 500 instances in US-West."}
             {activeSystem === 'Cost Efficiency' && "Significant underutilization in SA-East data center."}
           </p>
         </div>
@@ -137,6 +155,7 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
             <>
               {activeSystem === 'Traffic Optimizer' && <Activity className="w-4 h-4 text-neon-green" />}
               {activeSystem === 'Threat Defense' && <ShieldAlert className="w-4 h-4 text-neon-red" />}
+              {activeSystem === 'Allocation' && <Server className="w-4 h-4 text-neon-blue" />}
               {activeSystem === 'Cost Efficiency' && <Cpu className="w-4 h-4 text-neon-purple" />}
               Initiate Simulation
             </>

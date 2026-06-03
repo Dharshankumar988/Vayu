@@ -32,11 +32,12 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
     setMounted(true);
   }, []);
 
-  // Mock Arc Data for traffic visualization
+  // Mock Arc Data for traffic visualization (uncrowded neon flows)
   const arcsData = useMemo(() => {
     if (dataCenters.length < 2) return [];
     const arcs = [];
-    for (let i = 0; i < 15; i++) {
+    // Reduced from 15 to 8 for uncrowded look
+    for (let i = 0; i < 8; i++) {
       const src = dataCenters[Math.floor(Math.random() * dataCenters.length)];
       const dst = dataCenters[Math.floor(Math.random() * dataCenters.length)];
       if (src.id !== dst.id) {
@@ -66,10 +67,10 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
             globeRef.current.pointOfView({ altitude: 2.2 }, 3000);
           }
         }}
-        // Globe styling - deep cyber theme
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+        // Globe styling - bright cyber theme
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg" // Keeping dark earth so neon pops
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-        backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+        backgroundImageUrl="" // Removed starry background for cleaner glassmorphic feel
         
         // Data Centers (High-tech Glowing Cylinders)
         customLayerData={dataCenters}
