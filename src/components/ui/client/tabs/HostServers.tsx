@@ -4,8 +4,10 @@ import { useState, useMemo } from "react";
 import { useDCStore } from "@/store/dcStore";
 import { useAppStore } from "@/store";
 import { useUIStore } from "@/store/uiStore";
-import { MapPin, Server, DollarSign, CreditCard, CheckCircle, ChevronRight } from "lucide-react";
+import { MapPin, Server, DollarSign, CreditCard, CheckCircle, ChevronRight, Trash2, Cpu } from "lucide-react";
 import dynamic from "next/dynamic";
+
+const GlobeView = dynamic(() => import("@/components/3d/Layer1/GlobeView"), { ssr: false });
 
 const DataCenterInterior = dynamic(
   () => import("@/components/3d/Layer3/DataCenterInterior"),
@@ -213,77 +215,153 @@ export default function HostServers() {
     );
   }
 
+  const [activeTab, setActiveTab] = useState<"host" | "manage">("host");
+
+  const handleTerminateServer = (slotId: string) => {
+    updateSlotStatus(slotId, "available", null, null, null);
+    addNotification({ type: "success", title: "Server Terminated", message: "Your server instance has been shut down and billing stopped." });
+  };
+
+  const userSlots = useMemo(() => {
+    if (!user) return [];
+    return dataCenters.flatMap((dc) =>
+      dc.rooms.flatMap((r) =>
+        r.racks.flatMap((rack) =>
+          rack.slots.filter((s) => s.client_id === user.id).map((s) => ({ ...s, dcName: dc.name, region: dc.region }))
+        )
+      )
+    );
+  }, [dataCenters, user]);
+
   if (step === "dc") {
     return (
-      <div className="p-6 max-w-3xl">
-        <button onClick={() => setStep("region")} className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-6">
-          ← Back to Regions
-        </button>
-        <h2 className="font-semibold text-slate-900 mb-4">
-          Data Centers in {REGIONS.find((r) => r.id === selectedRegion)?.name}
-        </h2>
-        {regionDCs.length === 0 ? (
-          <div className="card p-8 text-center text-slate-400">No available data centers in this region.</div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {regionDCs.map((dc) => {
-              const avail = dc.rooms
-                .flatMap((r) => r.racks.flatMap((rack) => rack.slots))
-                .filter((s) => s.status === "available").length;
-              return (
-                <div key={dc.id} className="card p-5 hover:shadow-md transition-all">
-                  <div className="flex justify-between items-start mb-3">
-                    <p className="font-semibold text-slate-900">{dc.name}</p>
-                    <span className={`badge ${ dc.status === "healthy" ? "badge-healthy" : "badge-warning" }`}>{dc.status}</span>
-                  </div>
-                  <p className="text-xs text-slate-400 mb-3">{dc.location}</p>
-                  <div className="flex justify-between text-xs text-slate-600 mb-4">
-                    <span>Available slots</span>
-                    <span className="font-bold text-green-600">{avail}</span>
-                  </div>
-                  <button
-                    onClick={() => handleSelectDC(dc.id)}
-                    disabled={avail === 0 || dc.status === "offline"}
-                    className="btn-primary w-full py-2 text-sm flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    <Server className="w-4 h-4" /> View Interior
-                  </button>
-                </div>
-              );
-            })}
+      <div className="relative w-full h-full overflow-hidden bg-[#050814]">
+        {/* Fullscreen Globe */}
+        <div className="absolute inset-0 z-0">
+          <GlobeView onDataCenterClick={(dcId) => handleSelectDC(dcId)} />
+        </div>
+
+        {/* Floating Overlays */}
+        <div className="absolute inset-0 z-10 pointer-events-none flex p-6">
+          <div className="w-[400px] h-full flex flex-col pointer-events-auto">
+            <button onClick={() => setStep("region")} className="mb-4 self-start bg-white/10 hover:bg-white/20 text-white backdrop-blur-md px-4 py-2 rounded-lg text-sm transition-all border border-white/10 flex items-center gap-2">
+              ← Back to Regions
+            </button>
+            <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/50 flex flex-col flex-1 overflow-hidden animate-in slide-in-from-left-8 duration-300">
+              <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/80">
+                <h3 className="font-bold text-slate-900">Data Centers in {REGIONS.find((r) => r.id === selectedRegion)?.name}</h3>
+                <p className="text-xs text-slate-500">{regionDCs.length} available facilities</p>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar space-y-4">
+                {regionDCs.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 text-sm">No available data centers in this region.</div>
+                ) : (
+                  regionDCs.map((dc) => {
+                    const avail = dc.rooms
+                      .flatMap((r) => r.racks.flatMap((rack) => rack.slots))
+                      .filter((s) => s.status === "available").length;
+                    return (
+                      <div key={dc.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all">
+                        <div className="flex justify-between items-start mb-3">
+                          <p className="font-semibold text-slate-900">{dc.name}</p>
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${ dc.status === "healthy" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700" }`}>{dc.status}</span>
+                        </div>
+                        <p className="text-xs text-slate-500 mb-4">{dc.location}</p>
+                        <div className="flex justify-between text-xs text-slate-600 mb-4 bg-slate-50 p-2 rounded-lg">
+                          <span>Available slots</span>
+                          <span className="font-bold text-green-600">{avail}</span>
+                        </div>
+                        <button
+                          onClick={() => handleSelectDC(dc.id)}
+                          disabled={avail === 0 || dc.status === "offline"}
+                          className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Server className="w-4 h-4" /> View Interior
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     );
   }
 
-  // Step: region
+  // Step: region (Default)
   return (
-    <div className="p-6 max-w-3xl">
-      <h2 className="font-semibold text-slate-900 mb-1">Choose a Region</h2>
-      <p className="text-sm text-slate-400 mb-6">Select a region to view available data centers</p>
-      <div className="grid grid-cols-3 gap-4">
-        {REGIONS.map((region) => {
-          const dcsInRegion = dataCenters.filter((d) => d.region === region.id && !d.is_isolated);
-          const totalAvail = dcsInRegion.reduce((sum, dc) =>
-            sum + dc.rooms
-              .flatMap((r) => r.racks.flatMap((rack) => rack.slots))
-              .filter((s) => s.status === "available").length,
-            0
-          );
-          return (
-            <button
-              key={region.id}
-              onClick={() => { setSelectedRegion(region.id); setStep("dc"); }}
-              className="card p-5 text-left hover:shadow-md hover:border-blue-300 transition-all"
-            >
-              <MapPin className="w-6 h-6 text-blue-500 mb-3" />
-              <p className="font-semibold text-slate-900 mb-1">{region.name}</p>
-              <p className="text-xs text-slate-400">{dcsInRegion.length} data centers</p>
-              <p className="text-xs text-green-600 font-medium mt-1">{totalAvail} slots available</p>
-            </button>
-          );
-        })}
+    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
+      <div className="px-6 py-4 bg-white border-b border-slate-200 flex gap-4">
+        <button onClick={() => setActiveTab("host")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "host" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Host New Server</button>
+        <button onClick={() => setActiveTab("manage")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "manage" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Manage My Servers ({userSlots.length})</button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-6">
+        {activeTab === "host" ? (
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Choose a Region</h2>
+              <p className="text-slate-500">Select a region to view available data centers on the interactive globe.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {REGIONS.map((region) => {
+                const dcsInRegion = dataCenters.filter((d) => d.region === region.id && !d.is_isolated);
+                const totalAvail = dcsInRegion.reduce((sum, dc) => sum + dc.rooms.flatMap((r) => r.racks.flatMap((rack) => rack.slots)).filter((s) => s.status === "available").length, 0);
+                return (
+                  <button key={region.id} onClick={() => { setSelectedRegion(region.id); setStep("dc"); }} className="bg-white rounded-2xl p-6 text-left border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all group">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                      <MapPin className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                    </div>
+                    <p className="text-lg font-bold text-slate-900 mb-1">{region.name}</p>
+                    <p className="text-sm text-slate-500 mb-3">{dcsInRegion.length} data centers</p>
+                    <div className="inline-block px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold">
+                      {totalAvail} slots available
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto space-y-4">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6">Active Servers</h2>
+            {userSlots.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed">
+                <Cpu className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">You don't have any active servers yet.</p>
+                <button onClick={() => setActiveTab("host")} className="mt-4 text-blue-600 font-medium hover:underline">Host one now</button>
+              </div>
+            ) : (
+              userSlots.map((slot) => (
+                <div key={slot.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-5">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${slot.health === "healthy" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                      <Server className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-lg">{slot.server_name}</h3>
+                      <p className="text-sm text-slate-500 flex items-center gap-2">
+                        <span>{slot.dcName}</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-300" />
+                        <span className="capitalize">{slot.region.replace("_", " ")}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Status</p>
+                      <p className={`font-medium ${slot.health === "healthy" ? "text-green-600" : "text-red-600"}`}>{slot.health}</p>
+                    </div>
+                    <button onClick={() => handleTerminateServer(slot.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors border border-transparent hover:border-red-100" title="Terminate Server">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

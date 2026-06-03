@@ -108,9 +108,9 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
         // Data Centers as pyramids
         customLayerData={dataCenters}
         customThreeObject={(dc: any) => {
-          const geometry = new THREE.ConeGeometry(0.22, 0.7, 4);
+          const geometry = new THREE.ConeGeometry(0.4, 1.2, 4);
           // Point pyramid upward from globe surface
-          geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, 0.35, 0));
+          geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, 0.6, 0));
 
           let color = '#22c55e'; // healthy = green
           if (dc.load > 0.70 || dc.status === 'warning') color = '#f59e0b'; // warning = yellow

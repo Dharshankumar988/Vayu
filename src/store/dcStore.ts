@@ -65,12 +65,12 @@ interface DCState {
 
 // Default slot factory
 function makeSlots(rackId: string, existingSlots?: Partial<ServerSlot>[]): ServerSlot[] {
-  return [1, 2, 3, 4].map((pos) => {
+  return Array.from({ length: 10 }, (_, i) => i + 1).map((pos) => {
     const existing = existingSlots?.find((s) => s.position === pos);
     return {
       id: `slot-${rackId}-${pos}`,
       rack_id: rackId,
-      position: pos as 1 | 2 | 3 | 4,
+      position: pos as any, // 1 to 10
       status: existing?.status ?? 'available',
       client_id: existing?.client_id ?? null,
       client_name: existing?.client_name ?? null,
