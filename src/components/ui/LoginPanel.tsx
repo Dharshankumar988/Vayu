@@ -26,18 +26,20 @@ export default function LoginPanel() {
     setLoading(true);
     setError("");
     try {
-      const { data: userData, error: dbError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .eq('password', password)
-        .maybeSingle();
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', email, password }),
+      });
+      const data = await res.json();
 
-      if (dbError || !userData) {
-        setError("Invalid email or password. Please try again.");
-        setErrorType('error');
+      if (!res.ok) {
+        setError(data.message || data.error || "Invalid email or password. Please try again.");
+        setErrorType(data.error === 'pending' || data.error === 'rejected' || data.error === 'suspended' ? data.error : 'error');
         return;
       }
+
+      const userData = data.user;
 
       // Role check
       if (loginType === 'admin' && userData.role !== 'admin') {
