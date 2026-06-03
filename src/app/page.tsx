@@ -1,210 +1,103 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { Globe, Server, Activity, ShieldAlert, Cpu, LogOut, ArrowLeft } from "lucide-react";
-import { motion } from "framer-motion";
-import GlobeView from "@/components/3d/Layer1/GlobeView";
-import DataCenterInterior from "@/components/3d/Layer3/DataCenterInterior";
-import { MOCK_DATA_CENTERS } from "@/lib/mockData";
+import { useEffect, useRef, useMemo } from "react";
 import { useAppStore } from "@/store";
 import { useSimulationStore } from "@/store/simulationStore";
+import { useUIStore } from "@/store/uiStore";
+import { startAILoop, stopAILoop } from "@/lib/aiEngine";
+import dynamic from "next/dynamic";
+
+// Auth
 import LoginPanel from "@/components/ui/LoginPanel";
-import SimulationPanel from "@/components/ui/SimulationPanel";
-import AdminCapacityPanel from "@/components/ui/AdminCapacityPanel";
-import { Map, List } from "lucide-react";
+
+// Dashboards (lazy loaded)
+const AdminDashboard  = dynamic(() => import("@/components/ui/admin/AdminDashboard"),  { ssr: false });
+const ClientDashboard = dynamic(() => import("@/components/ui/client/ClientDashboard"), { ssr: false });
+const DataCenterInterior = dynamic(() => import("@/components/3d/Layer3/DataCenterInterior"), { ssr: false });
+
+// Wrap globe in a screen with DC metrics overlay
+const GlobeWithMetrics = dynamic(
+  () => import("@/components/ui/GlobeScreen"),
+  { ssr: false }
+);
 
 export default function Home() {
-  const user = useAppStore((state) => state.user);
-  const setUser = useAppStore((state) => state.setUser);
-  const viewLayer = useAppStore((state) => state.viewLayer);
-  const setViewLayer = useAppStore((state) => state.setViewLayer);
-  const selectedRegionId = useAppStore((state) => state.selectedRegionId);
-  const setSelectedRegionId = useAppStore((state) => state.setSelectedRegionId);
-  const updateSimulation = useSimulationStore((state) => state.updateSimulation);
-  const regions = useSimulationStore((state) => state.regions);
-  
-  const [mounted, setMounted] = useState(false);
-  const [activeAiSystem, setActiveAiSystem] = useState<any>(null);
+  const user      = useAppStore((s) => s.user);
+  const viewMode  = useAppStore((s) => s.viewMode);
+  const setViewMode = useAppStore((s) => s.setViewMode);
 
+  const updateSimulation = useSimulationStore((s) => s.updateSimulation);
+  const addNotification  = useUIStore((s) => s.addNotification);
+
+  // Track refs for intervals
+  const simIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Session-scoped effects: start AI loop + simulation tick when user logs in
   useEffect(() => {
-    setMounted(true);
-    
-    // Simulation Engine Loop
-    const interval = setInterval(() => {
-      updateSimulation(1);
-    }, 2000);
-    
-    return () => clearInterval(interval);
-  }, [updateSimulation]);
+    if (!user) {
+      stopAILoop();
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+        simIntervalRef.current = null;
+      }
+      return;
+    }
 
-  const filteredDataCenters = useMemo(() => {
-    if (!user) return [];
-    if (user.role === 'admin') return MOCK_DATA_CENTERS;
-    if (user.role === 'provider') return MOCK_DATA_CENTERS.filter(dc => dc.provider === user.company_name);
-    if (user.role === 'client') return MOCK_DATA_CENTERS.filter(dc => dc.clients?.includes(user.company_name));
-    return [];
+    // Start simulation engine (local state only, no API calls)
+    simIntervalRef.current = setInterval(() => {
+      updateSimulation(2);
+    }, 2000);
+
+    // Start AI loop (calls Groq API only on threshold events)
+    startAILoop();
+
+    addNotification({
+      type: "success",
+      title: `Welcome, ${user.full_name}`,
+      message:
+        user.role === "admin"
+          ? "AI monitoring loop active. All 10 data centers online."
+          : `Client portal ready. Hosting region: ${
+              user.preferred_dc_region?.replace("_", " ") ?? "Global"
+            }.`,
+    });
+
+    return () => {
+      stopAILoop();
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+        simIntervalRef.current = null;
+      }
+    };
   }, [user]);
 
-  if (!mounted) return null;
+  // Route to the correct view
+  if (!user || viewMode === "auth") {
+    return <LoginPanel />;
+  }
 
-  return (
-    <main className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-[#070715]">
-      {/* Background Grid Pattern - Brighter Cyber Theme */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,243,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,243,255,0.05)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,243,255,0.1)_0%,transparent_70%)] pointer-events-none" />
-      
-      {/* Central Title and Glow */}
-      <div className={`relative z-10 flex flex-col items-center pointer-events-none transition-all duration-1000 ${user ? 'mb-0 mt-8 absolute top-0' : 'mb-10'}`}>
-        <div className="absolute w-96 h-96 bg-neon-blue/30 rounded-full blur-[120px] -z-10 animate-pulse" />
-        <h1 className={`font-bold tracking-tight text-white mb-2 text-glow transition-all duration-1000 ${user ? 'text-4xl' : 'text-7xl'}`}>VAYU</h1>
+  // DC Interior view (shared for admin drill-down + client host-servers)
+  if (viewMode === "dc-interior") {
+    return (
+      <div className="relative w-screen h-screen overflow-hidden globe-zone">
+        <DataCenterInterior />
+        <button
+          onClick={() =>
+            setViewMode(
+              user.role === "admin" ? "admin-dashboard" : "client-dashboard"
+            )
+          }
+          className="absolute top-4 left-4 z-30 flex items-center gap-2 px-4 py-2 glass-panel-neon text-sm text-white font-medium rounded-xl hover:bg-white/10 transition-colors"
+        >
+          ← Back to Dashboard
+        </button>
       </div>
+    );
+  }
 
-      {/* Login Panel */}
-      {!user && (
-        <LoginPanel />
-      )}
+  if (user.role === "admin") {
+    return <AdminDashboard />;
+  }
 
-      {/* Simulation Panel */}
-      {user && activeAiSystem && user.role === 'admin' && (
-        <SimulationPanel defaultSystem={activeAiSystem} onClose={() => setActiveAiSystem(null)} />
-      )}
-      
-      {/* Admin Capacity Panel (Visible in Global View when Admin) */}
-      {user && user.role === 'admin' && viewLayer === 0 && (
-        <AdminCapacityPanel />
-      )}
-
-      {/* Authenticated User HUD */}
-      {user && (
-        <>
-          {/* Top Bar User Info */}
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="absolute top-8 right-8 z-20 glass-panel px-6 py-3 flex items-center gap-6"
-          >
-            <div className="flex flex-col text-right">
-              <span className="text-white font-medium">{user.full_name}</span>
-              <span className="text-xs text-neon-blue uppercase tracking-wider">{user.role} | {user.company_name}</span>
-            </div>
-            <div className="w-px h-8 bg-white/10" />
-            <button 
-              onClick={() => setUser(null)}
-              className="text-gray-400 hover:text-white transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          </motion.div>
-
-          {/* Regional Sidebar List (Visible on Global View) */}
-          {viewLayer === 0 && (
-            <motion.div 
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="absolute top-24 left-8 z-20 glass-panel-neon w-80 p-4"
-            >
-              <div className="flex items-center gap-2 mb-4 text-neon-blue border-b border-white/10 pb-2">
-                <List className="w-5 h-5" />
-                <h3 className="font-semibold uppercase tracking-wider text-sm">Global Regions</h3>
-              </div>
-              <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                {Object.values(regions).map((region) => (
-                  <div 
-                    key={region.id}
-                    onClick={() => setSelectedRegionId(selectedRegionId === region.id ? null : region.id)}
-                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                      selectedRegionId === region.id 
-                        ? 'bg-neon-blue/20 border-neon-blue shadow-[0_0_15px_rgba(0,243,255,0.3)]' 
-                        : 'bg-black/30 border-white/10 hover:border-white/30'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="text-white font-medium text-sm">{region.name}</span>
-                      {region.trafficAnomaly && <ShieldAlert className="w-4 h-4 text-neon-red animate-pulse" />}
-                    </div>
-                    <div className="flex justify-between mt-2 text-xs">
-                      <span className="text-gray-400">Users: {(region.users / 1000).toFixed(0)}k</span>
-                      <span className={region.load > 0.8 ? 'text-neon-red' : 'text-neon-green'}>Load: {(region.load * 100).toFixed(0)}%</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Bottom Control Bar */}
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 glass-panel-neon p-6 rounded-2xl w-full max-w-4xl flex justify-between items-center z-10"
-          >
-            <div 
-              onClick={() => setViewLayer(0)}
-              className={`flex flex-col items-center gap-2 cursor-pointer transition-colors ${viewLayer === 0 ? 'text-neon-blue' : 'text-gray-400 hover:text-neon-blue'}`}
-            >
-              <Globe className="w-6 h-6" />
-              <span className="text-xs uppercase">Global View</span>
-            </div>
-            <div className="w-px h-10 bg-white/10" />
-            <div 
-              onClick={() => { setViewLayer(1); setSelectedRegionId(null); }}
-              className={`flex flex-col items-center gap-2 cursor-pointer transition-colors ${viewLayer === 1 ? 'text-neon-purple' : 'text-gray-400 hover:text-neon-purple'}`}
-            >
-              <Server className="w-6 h-6" />
-              <span className="text-xs uppercase">Data Center</span>
-            </div>
-            <div className="w-px h-10 bg-white/10" />
-            
-            {(user.role === 'admin' || user.role === 'provider') && (
-              <>
-                {user.role === 'admin' && (
-                  <>
-                    <div 
-                      onClick={() => setActiveAiSystem('Traffic Optimizer')}
-                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-green transition-colors text-gray-400"
-                    >
-                      <Activity className="w-6 h-6" />
-                      <span className="text-xs uppercase">Traffic Optimizer</span>
-                    </div>
-                    <div className="w-px h-10 bg-white/10" />
-                    <div 
-                      onClick={() => setActiveAiSystem('Threat Defense')}
-                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-red transition-colors text-gray-400"
-                    >
-                      <ShieldAlert className="w-6 h-6" />
-                      <span className="text-xs uppercase">Threat Defense</span>
-                    </div>
-                    <div className="w-px h-10 bg-white/10" />
-                    <div 
-                      onClick={() => setActiveAiSystem('Allocation')}
-                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-neon-blue transition-colors text-gray-400"
-                    >
-                      <Server className="w-6 h-6" />
-                      <span className="text-xs uppercase">DC Allocation</span>
-                    </div>
-                    <div className="w-px h-10 bg-white/10" />
-                    <div 
-                      onClick={() => setActiveAiSystem('Cost Efficiency')}
-                      className="flex flex-col items-center gap-2 cursor-pointer hover:text-white transition-colors text-gray-400"
-                    >
-                      <Cpu className="w-6 h-6" />
-                      <span className="text-xs uppercase">Cost Efficiency</span>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-          </motion.div>
-        </>
-      )}
-
-      {/* 3D Canvas Switcher */}
-      <div className="absolute inset-0 z-0">
-        {viewLayer === 0 && <GlobeView dataCenters={filteredDataCenters} onDataCenterClick={() => setViewLayer(1)} />}
-        {viewLayer === 1 && <DataCenterInterior />}
-      </div>
-    </main>
-  );
+  return <ClientDashboard />;
 }

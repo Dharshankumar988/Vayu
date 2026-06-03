@@ -1,42 +1,95 @@
 import { create } from 'zustand';
 
-export type UserRole = 'admin' | 'client' | 'provider';
+export type UserRole = 'admin' | 'client';
+export type ClientType = 'individual' | 'organization';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
+export type ViewMode = 'auth' | 'admin-dashboard' | 'client-dashboard' | 'dc-interior';
+export type DcRegion = 'north_america' | 'south_america' | 'europe' | 'asia' | 'africa' | 'oceania';
 
 export interface User {
   id: string;
   email: string;
   role: UserRole;
-  company_name: string;
+  client_type: ClientType | null;
   full_name: string;
+  company_name: string | null;
+  country: string | null;
+  region: string | null;
+  phone: string | null;
+  preferred_dc_region: DcRegion | null;
+  approval_status: ApprovalStatus;
 }
+
+// 0=Globe (admin) or Host(client), 1=Approval/Reports, 2=OpLogs/Logs, 3=Regional, 4=Simulation
+export type AdminTab = 0 | 1 | 2 | 3 | 4;
+export type ClientTab = 0 | 1 | 2;
 
 interface AppState {
   user: User | null;
   setUser: (user: User | null) => void;
-  
-  // View State (0 = Global/Region, 1 = Data Center Interior)
+
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
+
+  // View Layer: 0 = globe, 1 = DC interior
   viewLayer: number;
   setViewLayer: (layer: number) => void;
-  
-  // Selected Region to focus the globe on
+
+  // Admin tabs (0-4)
+  activeAdminTab: AdminTab;
+  setActiveAdminTab: (tab: AdminTab) => void;
+
+  // Client tabs (0-2)
+  activeClientTab: ClientTab;
+  setActiveClientTab: (tab: ClientTab) => void;
+
+  // Selected IDs for drill-down
   selectedRegionId: string | null;
   setSelectedRegionId: (id: string | null) => void;
 
-  // Selected Data Center for Zooming In
   selectedDataCenterId: string | null;
   setSelectedDataCenterId: (id: string | null) => void;
+
+  selectedRoomId: string | null;
+  setSelectedRoomId: (id: string | null) => void;
+
+  selectedRackId: string | null;
+  setSelectedRackId: (id: string | null) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   user: null,
-  setUser: (user) => set({ user }),
-  
+  setUser: (user) =>
+    set({
+      user,
+      viewMode: !user
+        ? 'auth'
+        : user.role === 'admin'
+        ? 'admin-dashboard'
+        : 'client-dashboard',
+    }),
+
+  viewMode: 'auth',
+  setViewMode: (mode) => set({ viewMode: mode }),
+
   viewLayer: 0,
   setViewLayer: (layer) => set({ viewLayer: layer }),
-  
+
+  activeAdminTab: 0,
+  setActiveAdminTab: (tab) => set({ activeAdminTab: tab }),
+
+  activeClientTab: 0,
+  setActiveClientTab: (tab) => set({ activeClientTab: tab }),
+
   selectedRegionId: null,
   setSelectedRegionId: (id) => set({ selectedRegionId: id }),
 
   selectedDataCenterId: null,
   setSelectedDataCenterId: (id) => set({ selectedDataCenterId: id }),
+
+  selectedRoomId: null,
+  setSelectedRoomId: (id) => set({ selectedRoomId: id }),
+
+  selectedRackId: null,
+  setSelectedRackId: (id) => set({ selectedRackId: id }),
 }));
