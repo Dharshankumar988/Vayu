@@ -16,11 +16,17 @@ export async function POST(req: Request) {
     if (!groq && process.env.GROQ_API_KEY) {
       groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     }
-    const { systemType, context, prompt } = await req.json();
+    const { systemType, context, prompt, userQuery } = await req.json();
     if (!systemType || !prompt) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
-    const systemPrompt = TECHNIQUE_PROMPTS[systemType] ?? 'You are the Vayu AI Assistant. Respond in JSON.';
+    
+    // Add specific instruction for custom questions to the system prompt
+    let systemPrompt = TECHNIQUE_PROMPTS[systemType] ?? 'You are the Vayu AI Assistant. Respond in JSON.';
+    if (userQuery) {
+      systemPrompt += ` The user has asked a specific question: "${userQuery}". Answer this question directly in the 'explanation' field, explaining how the active technique works, its benefits, and why it was chosen based on the context.`;
+    }
+
     const model = 'llama-3.3-70b-versatile';
 
     if (!groq) {
@@ -32,8 +38,15 @@ export async function POST(req: Request) {
         'Cost Efficiency': { decision: 'Initiate live migration of 42 idle VMs to core cluster; power down 6 edge nodes', explanation: 'SA-East region at 18% utilization. Live migrating 42 idle VMs (avg 0.3 vCPU) to NA-East core cluster saves 3.2kW/hr. Powering down 6 edge nodes reduces PUE from 1.8 to 1.6.', technique: 'VM Live Migration', confidence: '86.9' },
         'Health Analysis': { summary: 'Your infrastructure is operating within normal parameters. All 3 hosted servers show healthy CPU and memory utilization. No anomalies detected in the last 24 hours.', status: 'healthy', recommendations: ['Consider upgrading Stark-DB-1 memory allocation as it approaches 80% utilization', 'Schedule maintenance window for next month'] },
       };
-      const mock = mocks[systemType] ?? { decision: 'System nominal', explanation: 'All parameters within acceptable range.', technique: 'Auto', confidence: '85.0' };
-      return NextResponse.json({ ...mock, confidence: (mock as any).confidence ?? `${(80 + Math.random() * 15).toFixed(1)}` });
+      
+      const baseMock = mocks[systemType] ?? { decision: 'System nominal', explanation: 'All parameters within acceptable range.', technique: 'Auto', confidence: '85.0' };
+      const mock = { ...baseMock } as any;
+      
+      if (userQuery) {
+        mock.explanation = `(Mock Response) Answering: "${userQuery}"\n\nBased on our current ${systemType} strategy and the active ${mock.technique} technique, this approach allows us to automatically adapt to the environment. It ensures high availability and cost efficiency by dynamically shifting resources.`;
+      }
+
+      return NextResponse.json({ ...mock, confidence: mock.confidence ?? `${(80 + Math.random() * 15).toFixed(1)}` });
     }
 
     const completion = await groq.chat.completions.create({

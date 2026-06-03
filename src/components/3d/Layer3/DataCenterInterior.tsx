@@ -41,12 +41,25 @@ export default function DataCenterInterior() {
   const selectedDCId = useAppStore((s) => s.selectedDataCenterId);
   const dataCenters = useDCStore((s) => s.dataCenters);
   const [selectedRoomIdx, setSelectedRoomIdx] = useState(0);
-  const [selectedSlot, setSelectedSlot] = useState<ServerSlot | null>(null);
+  const selectedSlotId = useAppStore((s) => s.selectedSlotId);
+  const setSelectedSlotId = useAppStore((s) => s.setSelectedSlotId);
 
   const dc = useMemo(() => {
     if (selectedDCId) return dataCenters.find((d) => d.id === selectedDCId);
     return dataCenters[0];
   }, [selectedDCId, dataCenters]);
+
+  const selectedSlot = useMemo(() => {
+    if (!selectedSlotId || !dc) return null;
+    for (const room of dc.rooms) {
+      for (const rack of room.racks) {
+        for (const slot of rack.slots) {
+          if (slot.id === selectedSlotId) return slot;
+        }
+      }
+    }
+    return null;
+  }, [selectedSlotId, dc]);
 
   const rooms = useMemo(() => {
     if (!dc || !user) return [];
@@ -178,7 +191,7 @@ export default function DataCenterInterior() {
                 key={rack.id}
                 position={[x, 0, z]}
                 rack={rack}
-                onSlotClick={(slot) => setSelectedSlot(slot)}
+                onSlotClick={(slot) => setSelectedSlotId(slot.id)}
                 currentUserId={user?.id ?? null}
               />
             );

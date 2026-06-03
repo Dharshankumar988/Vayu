@@ -33,10 +33,12 @@ export default function HostServers() {
   const [step, setStep] = useState<"region" | "dc" | "interior" | "billing" | "success">("region");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedDCId, setSelectedDCId] = useState("");
-  const [selectedSlotId, setSelectedSlotId] = useState("");
+  const selectedSlotId = useAppStore((s) => s.selectedSlotId);
+  const setSelectedSlotId = useAppStore((s) => s.setSelectedSlotId);
   const [serverName, setServerName] = useState("");
   const [duration, setDuration] = useState(1);
   const [paying, setPaying] = useState(false);
+  const [activeTab, setActiveTab] = useState<"host" | "manage">("host");
 
   const regionDCs = useMemo(
     () => dataCenters.filter((dc) => dc.region === selectedRegion && !dc.is_isolated),
@@ -52,6 +54,17 @@ export default function HostServers() {
       .flatMap((r) => r.racks.flatMap((rack) => rack.slots))
       .filter((s) => s.status === "available").length;
   }, [selectedDC]);
+
+  const userSlots = useMemo(() => {
+    if (!user) return [];
+    return dataCenters.flatMap((dc) =>
+      dc.rooms.flatMap((r) =>
+        r.racks.flatMap((rack) =>
+          rack.slots.filter((s) => s.client_id === user.id).map((s) => ({ ...s, dcName: dc.name, region: dc.region }))
+        )
+      )
+    );
+  }, [dataCenters, user]);
 
   const SLOT_PRICE = 120; // $120/slot/month
   const discount = duration >= 12 ? 0.2 : duration >= 6 ? 0.1 : 0;
@@ -215,23 +228,10 @@ export default function HostServers() {
     );
   }
 
-  const [activeTab, setActiveTab] = useState<"host" | "manage">("host");
-
   const handleTerminateServer = (slotId: string) => {
     updateSlotStatus(slotId, "available", null, null, null);
     addNotification({ type: "success", title: "Server Terminated", message: "Your server instance has been shut down and billing stopped." });
   };
-
-  const userSlots = useMemo(() => {
-    if (!user) return [];
-    return dataCenters.flatMap((dc) =>
-      dc.rooms.flatMap((r) =>
-        r.racks.flatMap((rack) =>
-          rack.slots.filter((s) => s.client_id === user.id).map((s) => ({ ...s, dcName: dc.name, region: dc.region }))
-        )
-      )
-    );
-  }, [dataCenters, user]);
 
   if (step === "dc") {
     return (
@@ -292,29 +292,35 @@ export default function HostServers() {
 
   // Step: region (Default)
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-hidden">
-      <div className="px-6 py-4 bg-white border-b border-slate-200 flex gap-4">
-        <button onClick={() => setActiveTab("host")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "host" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Host New Server</button>
-        <button onClick={() => setActiveTab("manage")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "manage" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Manage My Servers ({userSlots.length})</button>
+    <div className="relative w-full h-full overflow-hidden bg-[#050814]">
+      {/* Fullscreen Globe Background */}
+      <div className="absolute inset-0 z-0 opacity-80 pointer-events-none">
+        <GlobeView onDataCenterClick={() => {}} />
       </div>
-      <div className="flex-1 overflow-y-auto p-6">
-        {activeTab === "host" ? (
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Choose a Region</h2>
-              <p className="text-slate-500">Select a region to view available data centers on the interactive globe.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {REGIONS.map((region) => {
-                const dcsInRegion = dataCenters.filter((d) => d.region === region.id && !d.is_isolated);
-                const totalAvail = dcsInRegion.reduce((sum, dc) => sum + dc.rooms.flatMap((r) => r.racks.flatMap((rack) => rack.slots)).filter((s) => s.status === "available").length, 0);
-                return (
-                  <button key={region.id} onClick={() => { setSelectedRegion(region.id); setStep("dc"); }} className="bg-white rounded-2xl p-6 text-left border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all group">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
-                      <MapPin className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
-                    </div>
-                    <p className="text-lg font-bold text-slate-900 mb-1">{region.name}</p>
-                    <p className="text-sm text-slate-500 mb-3">{dcsInRegion.length} data centers</p>
+
+      <div className="absolute inset-0 z-10 flex flex-col h-full bg-slate-50/70 backdrop-blur-sm overflow-hidden pointer-events-auto">
+        <div className="px-6 py-4 bg-white/90 backdrop-blur-md border-b border-slate-200/50 flex gap-4">
+          <button onClick={() => setActiveTab("host")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "host" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Host New Server</button>
+          <button onClick={() => setActiveTab("manage")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "manage" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Manage My Servers ({userSlots.length})</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6">
+          {activeTab === "host" ? (
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Choose a Region</h2>
+                <p className="text-slate-700 font-medium">Select a region to view available data centers on the interactive globe.</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {REGIONS.map((region) => {
+                  const dcsInRegion = dataCenters.filter((d) => d.region === region.id && !d.is_isolated);
+                  const totalAvail = dcsInRegion.reduce((sum, dc) => sum + dc.rooms.flatMap((r) => r.racks.flatMap((rack) => rack.slots)).filter((s) => s.status === "available").length, 0);
+                  return (
+                    <button key={region.id} onClick={() => { setSelectedRegion(region.id); setStep("dc"); }} className="bg-white/95 backdrop-blur-md rounded-2xl p-6 text-left border border-white/20 shadow-lg hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all group">
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
+                        <MapPin className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                      </div>
+                      <p className="text-lg font-bold text-slate-900 mb-1">{region.name}</p>
+                      <p className="text-sm text-slate-500 mb-3">{dcsInRegion.length} data centers</p>
                     <div className="inline-block px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold">
                       {totalAvail} slots available
                     </div>
@@ -363,6 +369,7 @@ export default function HostServers() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

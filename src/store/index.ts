@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type UserRole = 'admin' | 'client';
 export type ClientType = 'individual' | 'organization';
@@ -55,41 +56,54 @@ interface AppState {
 
   selectedRackId: string | null;
   setSelectedRackId: (id: string | null) => void;
+
+  selectedSlotId: string | null;
+  setSelectedSlotId: (id: string | null) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  user: null,
-  setUser: (user) =>
-    set({
-      user,
-      viewMode: !user
-        ? 'auth'
-        : user.role === 'admin'
-        ? 'admin-dashboard'
-        : 'client-dashboard',
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      user: null,
+      setUser: (user) =>
+        set({
+          user,
+          viewMode: !user
+            ? 'auth'
+            : user.role === 'admin'
+            ? 'admin-dashboard'
+            : 'client-dashboard',
+        }),
+
+      viewMode: 'auth',
+      setViewMode: (mode) => set({ viewMode: mode }),
+
+      viewLayer: 0,
+      setViewLayer: (layer) => set({ viewLayer: layer }),
+
+      activeAdminTab: 0,
+      setActiveAdminTab: (tab) => set({ activeAdminTab: tab }),
+
+      activeClientTab: 0,
+      setActiveClientTab: (tab) => set({ activeClientTab: tab }),
+
+      selectedRegionId: null,
+      setSelectedRegionId: (id) => set({ selectedRegionId: id }),
+
+      selectedDataCenterId: null,
+      setSelectedDataCenterId: (id) => set({ selectedDataCenterId: id }),
+
+      selectedRoomId: null,
+      setSelectedRoomId: (id) => set({ selectedRoomId: id }),
+
+      selectedRackId: null,
+      setSelectedRackId: (id) => set({ selectedRackId: id }),
+
+      selectedSlotId: null,
+      setSelectedSlotId: (id) => set({ selectedSlotId: id }),
     }),
-
-  viewMode: 'auth',
-  setViewMode: (mode) => set({ viewMode: mode }),
-
-  viewLayer: 0,
-  setViewLayer: (layer) => set({ viewLayer: layer }),
-
-  activeAdminTab: 0,
-  setActiveAdminTab: (tab) => set({ activeAdminTab: tab }),
-
-  activeClientTab: 0,
-  setActiveClientTab: (tab) => set({ activeClientTab: tab }),
-
-  selectedRegionId: null,
-  setSelectedRegionId: (id) => set({ selectedRegionId: id }),
-
-  selectedDataCenterId: null,
-  setSelectedDataCenterId: (id) => set({ selectedDataCenterId: id }),
-
-  selectedRoomId: null,
-  setSelectedRoomId: (id) => set({ selectedRoomId: id }),
-
-  selectedRackId: null,
-  setSelectedRackId: (id) => set({ selectedRackId: id }),
-}));
+    {
+      name: 'vayu-app-store',
+    }
+  )
+);

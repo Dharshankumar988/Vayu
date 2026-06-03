@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useDCStore } from "@/store/dcStore";
 import { useSimulationStore } from "@/store/simulationStore";
@@ -19,11 +19,27 @@ const ARC_COLOR_MAP = {
 };
 
 export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (dcId: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<any>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
   const dataCenters = useDCStore((s) => s.dataCenters);
   const { regions, simulationEvents, activeArcs } = useSimulationStore();
   const { selectedRegionId } = useAppStore();
   const { showGlobeLegend, toggleGlobeLegend } = useUIStore();
+
+  // Handle container resize
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        const { width, height } = entries[0].contentRect;
+        setDimensions({ width, height });
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Region zoom effect
   useEffect(() => {
@@ -95,10 +111,13 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
   const reset   = () => { globeRef.current?.pointOfView({ lat: 0, lng: 0, altitude: 2.2 }, 1000); if (globeRef.current) globeRef.current.controls().autoRotate = true; };
 
   return (
-    <div className="absolute inset-0 cursor-grab active:cursor-grabbing">
-      <Globe
-        ref={globeRef}
-        onGlobeReady={handleGlobeReady}
+    <div ref={containerRef} className="absolute inset-0 cursor-grab active:cursor-grabbing overflow-hidden">
+      {dimensions.width > 0 && (
+        <Globe
+          ref={globeRef}
+          width={dimensions.width}
+          height={dimensions.height}
+          onGlobeReady={handleGlobeReady}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-day.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
         backgroundColor="rgba(0,0,0,0)"
@@ -176,9 +195,8 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
         ringPropagationSpeed={0.6}
         ringRepeatPeriod={1800}
 
-        width={typeof window !== 'undefined' ? window.innerWidth : 1200}
-        height={typeof window !== 'undefined' ? window.innerHeight : 800}
       />
+      )}
 
       {/* Globe Controls HUD */}
       <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20">

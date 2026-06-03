@@ -195,8 +195,12 @@ const INITIAL_DCS: DataCenterFull[] = [
   },
 ];
 
-export const useDCStore = create<DCState>((set) => ({
-  dataCenters: INITIAL_DCS,
+import { persist } from 'zustand/middleware';
+
+export const useDCStore = create<DCState>()(
+  persist(
+    (set) => ({
+      dataCenters: INITIAL_DCS,
 
   setDataCenters: (dcs) => set({ dataCenters: dcs }),
 
@@ -299,4 +303,9 @@ export const useDCStore = create<DCState>((set) => ({
         dc.id === dcId ? { ...dc, is_isolated: isolated } : dc
       ),
     })),
-}));
+    }),
+    {
+      name: 'vayu-dc-store',
+    }
+  )
+);

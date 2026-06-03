@@ -17,6 +17,7 @@ interface UIState {
   markRead: (id: string) => void;
   markAllRead: () => void;
   clearNotification: (id: string) => void;
+  clearAllNotifications: () => void;
 
   showGlobeLegend: boolean;
   toggleGlobeLegend: () => void;
@@ -66,6 +67,9 @@ export const useUIStore = create<UIState>((set) => ({
     set((state) => ({
       notifications: state.notifications.filter((n) => n.id !== id),
     })),
+
+  clearAllNotifications: () =>
+    set({ notifications: [] }),
 
   showGlobeLegend: false,
   toggleGlobeLegend: () =>

@@ -24,6 +24,8 @@ export default function OperationalLogs() {
   const [querying, setQuerying] = useState(false);
   const [liveResult, setLiveResult] = useState<any>(null);
 
+  const [userQuery, setUserQuery] = useState("");
+
   const avgLoad = Object.values(regions).reduce((s, r) => s + r.load, 0) / Object.values(regions).length;
   const maxThreat = Math.max(...Object.values(regions).map((r) => r.threatLevel));
 
@@ -50,14 +52,21 @@ export default function OperationalLogs() {
       cost: `Average utilization: ${(avgLoad * 100).toFixed(0)}%. Recommend cost optimization strategy.`,
       allocation: `10 active data centers. Recommend server allocation strategy.`,
     };
+
+    let finalPrompt = promptMap[cat.id];
+    if (userQuery.trim()) {
+      finalPrompt += `\n\nThe user also asked a specific question: "${userQuery}". Please answer this question directly while explaining the active technique.`;
+    }
+
     try {
       const res = await fetch("/api/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ systemType: cat.label, context: contextMap[cat.id], prompt: promptMap[cat.id] }),
+        body: JSON.stringify({ systemType: cat.label, context: contextMap[cat.id], prompt: finalPrompt, userQuery: userQuery.trim() }),
       });
       const data = await res.json();
-      setLiveResult(data);
+      setLiveResult({ ...data, questionAsked: userQuery.trim() });
+      setUserQuery(""); // Reset after query
     } catch { }
     finally { setQuerying(false); }
   };
@@ -123,13 +132,29 @@ export default function OperationalLogs() {
                   })}
                 </div>
 
-                <button onClick={handleQueryAI} disabled={querying}
-                  className="btn-primary w-full py-2.5 flex items-center justify-center gap-2">
-                  {querying ? <><Loader2 className="w-4 h-4 animate-spin" />Analyzing...</> : <><Cpu className="w-4 h-4" />Query AI</>}
-                </button>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Ask AI about this strategy..."
+                    value={userQuery}
+                    onChange={(e) => setUserQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleQueryAI()}
+                    className="flex-1 input-light text-sm"
+                  />
+                  <button onClick={handleQueryAI} disabled={querying}
+                    className="btn-primary px-4 py-2 flex items-center justify-center gap-2 whitespace-nowrap">
+                    {querying ? <><Loader2 className="w-4 h-4 animate-spin" />Ask</> : <><Cpu className="w-4 h-4" />Ask</>}
+                  </button>
+                </div>
 
                 {liveResult && (
                   <div className="mt-4 space-y-3">
+                    {liveResult.questionAsked && (
+                      <div className="bg-slate-100 rounded-xl p-3 border border-slate-200">
+                        <p className="text-xs font-semibold text-slate-500 mb-1">Your Question</p>
+                        <p className="text-sm text-slate-800 italic">"{liveResult.questionAsked}"</p>
+                      </div>
+                    )}
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
                       <p className="text-xs font-semibold text-blue-800 mb-1">Decision</p>
                       <p className="text-sm text-blue-900">{liveResult.decision}</p>
