@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { Lock, User as UserIcon } from "lucide-react";
 
+import RegistrationFlow from "./RegistrationFlow";
+
 export default function LoginPanel() {
   const setUser = useAppStore((state) => state.setUser);
   
@@ -13,6 +15,7 @@ export default function LoginPanel() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,7 +23,6 @@ export default function LoginPanel() {
     setError("");
 
     try {
-      // Simplified college project auth: direct table query
       const { data, error: dbError } = await supabase
         .from('users')
         .select('*')
@@ -49,6 +51,10 @@ export default function LoginPanel() {
       setLoading(false);
     }
   };
+
+  if (showRegistration) {
+    return <RegistrationFlow onBackToLogin={() => setShowRegistration(false)} />;
+  }
 
   return (
     <motion.div 
@@ -104,6 +110,13 @@ export default function LoginPanel() {
         </button>
       </form>
       
+      <button 
+        onClick={() => setShowRegistration(true)}
+        className="w-full mt-4 text-gray-400 hover:text-white text-sm transition-colors uppercase tracking-wider"
+      >
+        Establish New Uplink (Register)
+      </button>
+
       <div className="mt-6 border-t border-white/10 pt-4 text-xs text-gray-500 flex flex-col gap-1">
         <p>Demo Accounts:</p>
         <div className="grid grid-cols-2 gap-2 mt-2">

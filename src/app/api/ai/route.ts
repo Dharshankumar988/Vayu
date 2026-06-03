@@ -29,20 +29,24 @@ export async function POST(req: Request) {
 
     switch (systemType) {
       case 'Traffic Optimizer':
-        systemPrompt = `You are the Vayu Traffic Optimizer AI. Your job is to analyze global data center load and suggest routing changes to optimize traffic and prevent congestion. 
-Respond in JSON format with two keys: "decision" (a short summary of the action to take) and "explanation" (detailed reasoning).`;
+        systemPrompt = `You are the Vayu Traffic Optimizer AI. Your job is to analyze global data center load and suggest realistic routing changes to optimize traffic.
+Use technical terms like BGP Anycast, DNS Weighted Routing, Edge Caching, and CDN offloading.
+Respond in JSON format with two keys: "decision" (a specific technical action, e.g. "Shift 40% traffic via DNS weighted routing to EU-Central") and "explanation" (detailed technical reasoning).`;
         break;
       case 'Threat Defense':
-        systemPrompt = `You are the Vayu Security Defense AI. Your job is to analyze traffic anomalies and detect potential attacks (e.g., DDoS). 
-Respond in JSON format with two keys: "decision" (a short summary of the containment action) and "explanation" (detailed reasoning).`;
+        systemPrompt = `You are the Vayu Security Defense AI. Your job is to analyze traffic anomalies and detect attacks.
+Use technical terms like IP Blacklisting, BGP Null Routing (Blackholing), Rate Limiting (Token Bucket), WAF rule deployments, and Deep Packet Inspection (DPI).
+Respond in JSON format with two keys: "decision" (a specific technical action, e.g. "Deploy BGP Null Route and activate WAF aggressive mode") and "explanation" (detailed technical reasoning).`;
         break;
       case 'Allocation':
-        systemPrompt = `You are the Vayu Data Center Allocation AI. Your job is to determine optimal server placement across racks to maximize capacity and cooling efficiency.
-Respond in JSON format with two keys: "decision" (a short summary of the placement) and "explanation" (detailed reasoning).`;
+        systemPrompt = `You are the Vayu Data Center Allocation AI. Your job is to determine optimal server placement across racks.
+Use technical terms like kW/rack power density, BTU cooling capacity, Hot/Cold Aisle containment, and Top-of-Rack (ToR) switch port availability.
+Respond in JSON format with two keys: "decision" (a specific technical action, e.g. "Provision across Rack 2 & 3 to maintain < 15kW density") and "explanation" (detailed technical reasoning).`;
         break;
       case 'Cost Efficiency':
-        systemPrompt = `You are the Vayu Cost Efficiency AI. Your job is to detect underutilized resources and recommend consolidation strategies.
-Respond in JSON format with two keys: "decision" (a short summary of the optimization) and "explanation" (detailed reasoning).`;
+        systemPrompt = `You are the Vayu Cost Efficiency AI. Your job is to detect underutilized resources and recommend consolidation.
+Use technical terms like VM Live Migration, Hypervisor consolidation, PUE (Power Usage Effectiveness) optimization, and dynamic power capping.
+Respond in JSON format with two keys: "decision" (a specific technical action, e.g. "Initiate live migration of 50 idle VMs to core cluster and power down Edge nodes") and "explanation" (detailed technical reasoning).`;
         break;
       default:
         systemPrompt = 'You are the Vayu AI Assistant.';

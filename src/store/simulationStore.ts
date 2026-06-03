@@ -3,6 +3,8 @@ import { create } from 'zustand';
 export interface RegionalData {
   id: string;
   name: string;
+  lat: number;
+  lng: number;
   users: number; // Number of active users
   load: number;  // 0.0 to 1.0
   threatLevel: number; // 0.0 to 1.0
@@ -26,10 +28,10 @@ export interface SimulationState {
 
 export const useSimulationStore = create<SimulationState>((set) => ({
   regions: {
-    "us-east": { id: "us-east", name: "US-East", users: 1500000, load: 0.6, threatLevel: 0.1, trafficAnomaly: false },
-    "us-west": { id: "us-west", name: "US-West", users: 800000, load: 0.4, threatLevel: 0.05, trafficAnomaly: false },
-    "eu-central": { id: "eu-central", name: "EU-Central", users: 1200000, load: 0.5, threatLevel: 0.1, trafficAnomaly: false },
-    "ap-tokyo": { id: "ap-tokyo", name: "AP-Tokyo", users: 2000000, load: 0.8, threatLevel: 0.2, trafficAnomaly: false },
+    "us-east": { id: "us-east", name: "US-East", lat: 39.0438, lng: -77.4874, users: 1500000, load: 0.6, threatLevel: 0.1, trafficAnomaly: false },
+    "us-west": { id: "us-west", name: "US-West", lat: 37.3382, lng: -121.8863, users: 800000, load: 0.4, threatLevel: 0.05, trafficAnomaly: false },
+    "eu-central": { id: "eu-central", name: "EU-Central", lat: 50.1109, lng: 8.6821, users: 1200000, load: 0.5, threatLevel: 0.1, trafficAnomaly: false },
+    "ap-tokyo": { id: "ap-tokyo", name: "AP-Tokyo", lat: 35.6762, lng: 139.6503, users: 2000000, load: 0.8, threatLevel: 0.2, trafficAnomaly: false },
   },
   globalTrafficRate: 10000, // req/s
 

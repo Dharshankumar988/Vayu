@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useAppStore } from "@/store";
+import { useSimulationStore } from "@/store/simulationStore";
 
 // Dynamically import react-globe.gl to avoid SSR issues
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
@@ -27,31 +29,70 @@ export interface GlobeViewProps {
 export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewProps) {
   const globeRef = useRef<any>(null);
   const [mounted, setMounted] = useState(false);
+  
+  const selectedRegionId = useAppStore((state) => state.selectedRegionId);
+  const regions = useSimulationStore((state) => state.regions);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Mock Arc Data for traffic visualization (uncrowded neon flows)
+  // Handle region selection zoom
+  useEffect(() => {
+    if (!mounted || !globeRef.current) return;
+    
+    if (selectedRegionId && regions[selectedRegionId]) {
+      const region = regions[selectedRegionId];
+      globeRef.current.pointOfView({ lat: region.lat, lng: region.lng, altitude: 0.8 }, 2000);
+      globeRef.current.controls().autoRotate = false;
+    } else {
+      globeRef.current.pointOfView({ altitude: 2.2 }, 2000);
+      globeRef.current.controls().autoRotate = true;
+    }
+  }, [selectedRegionId, regions, mounted]);
+
+  // Traffic visualization
   const arcsData = useMemo(() => {
     if (dataCenters.length < 2) return [];
     const arcs = [];
-    // Reduced from 15 to 8 for uncrowded look
-    for (let i = 0; i < 8; i++) {
-      const src = dataCenters[Math.floor(Math.random() * dataCenters.length)];
-      const dst = dataCenters[Math.floor(Math.random() * dataCenters.length)];
-      if (src.id !== dst.id) {
+    const numArcs = 10;
+    
+    // Convert regions to array to pick random traffic routes
+    const regionArr = Object.values(regions);
+    
+    for (let i = 0; i < numArcs; i++) {
+      const srcDc = dataCenters[Math.floor(Math.random() * dataCenters.length)];
+      const dstDc = dataCenters[Math.floor(Math.random() * dataCenters.length)];
+      
+      // Determine if a region has anomaly, if so, high chance of red lines
+      const anomalyRegion = regionArr.find(r => r.trafficAnomaly);
+      const isRed = anomalyRegion && Math.random() > 0.3; // 70% chance of red if anomaly exists globally
+      
+      // otherwise, shade of green based on some random load proxy
+      const greenShade = Math.random() > 0.5 ? '#00ff66' : '#00aa44';
+
+      if (srcDc.id !== dstDc.id) {
         arcs.push({
-          startLat: src.lat,
-          startLng: src.lng,
-          endLat: dst.lat,
-          endLng: dst.lng,
-          color: ['#00f3ff', '#b52aff', '#00ff66'][Math.floor(Math.random() * 3)]
+          startLat: srcDc.lat,
+          startLng: srcDc.lng,
+          endLat: dstDc.lat,
+          endLng: dstDc.lng,
+          color: isRed ? '#ff0033' : greenShade
         });
       }
     }
     return arcs;
-  }, [dataCenters]);
+  }, [dataCenters, regions]);
+
+  // Regional Boundaries (Orange rings)
+  const regionalRings = useMemo(() => {
+    return Object.values(regions).map(r => ({
+      lat: r.lat,
+      lng: r.lng,
+      name: r.name,
+      anomaly: r.trafficAnomaly
+    }));
+  }, [regions]);
 
   if (!mounted) return null;
 
@@ -61,32 +102,32 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
         ref={globeRef}
         onGlobeReady={() => {
           if (globeRef.current) {
-            globeRef.current.controls().autoRotate = true;
+            globeRef.current.controls().autoRotate = !selectedRegionId;
             globeRef.current.controls().autoRotateSpeed = 0.5;
             globeRef.current.controls().enableDamping = true;
-            globeRef.current.pointOfView({ altitude: 2.2 }, 3000);
+            if (!selectedRegionId) {
+              globeRef.current.pointOfView({ altitude: 2.2 }, 3000);
+            }
           }
         }}
-        // Globe styling - bright cyber theme
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg" // Keeping dark earth so neon pops
+        // Globe styling - blue/black theme
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
         bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-        backgroundImageUrl="" // Removed starry background for cleaner glassmorphic feel
+        backgroundColor="rgba(0,0,0,0)"
         
-        // Data Centers (High-tech Glowing Cylinders)
+        // Data Centers (Blue/Purple Glowing Cylinders)
         customLayerData={dataCenters}
         customThreeObject={(d: any) => {
-          const height = d.size * 4; // Taller for better visibility
-          const geometry = new THREE.CylinderGeometry(0.3, 0.3, height, 32); // Thinner and smoother
-          // Rotate to align with Z axis (pointing outwards from globe)
+          const height = d.size * 4;
+          const geometry = new THREE.CylinderGeometry(0.3, 0.3, height, 32);
           geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI / 2));
-          // Translate so base is on the globe surface
           geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, 0, height / 2));
           
-          let color = '#00ff66';
-          if (d.status === 'offline') color = '#ff0055';
-          if (d.status === 'degraded') color = '#ffaa00';
+          let color = '#7b2cbf'; // Purple
+          if (d.status === 'offline') color = '#ff0033';
+          if (d.status === 'degraded') color = '#ff9900';
+          if (d.status === 'operational') color = '#00f3ff'; // Blue
           
-          // Use Physical material for premium glass/glow feel
           const material = new THREE.MeshPhysicalMaterial({ 
             color: color, 
             transparent: true, 
@@ -103,22 +144,18 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
         }}
         onCustomLayerClick={(point: any) => onDataCenterClick?.(point as DataCenter)}
         
-        // Labels for Data Centers
+        // Data Center Labels
         labelsData={dataCenters}
         labelLat={(d: any) => d.lat}
         labelLng={(d: any) => d.lng}
         labelText={(d: any) => ` ${d.name} `}
         labelSize={(d: any) => 1.2}
         labelDotRadius={0.3}
-        labelColor={(d: any) => {
-          if (d.status === 'offline') return '#ff0055';
-          if (d.status === 'degraded') return '#ffaa00';
-          return '#00ff66';
-        }}
+        labelColor={(d: any) => '#ffffff'}
         labelResolution={2}
-        labelAltitude={(d: any) => (d.size * 4) / 100 + 0.05} // Float just above the cylinder
+        labelAltitude={(d: any) => (d.size * 4) / 100 + 0.05}
         
-        // Traffic (Arcs) - Smooth, glowing neon energy lines
+        // Traffic (Arcs)
         arcsData={arcsData}
         arcStartLat="startLat"
         arcStartLng="startLng"
@@ -129,27 +166,22 @@ export default function GlobeView({ dataCenters, onDataCenterClick }: GlobeViewP
         arcDashGap={1.5}
         arcDashInitialGap={() => Math.random() * 5}
         arcDashAnimateTime={1200}
-        arcStroke={0.4}
+        arcStroke={0.5}
         arcAltitudeAutoScale={0.4}
         
-        // Rings around points to make them pulsate
-        ringsData={dataCenters}
+        // Regional Boundaries (Orange rings)
+        ringsData={regionalRings}
         ringLat="lat"
         ringLng="lng"
-        ringColor={(d: any) => {
-          if (d.status === 'offline') return '#ff0055';
-          if (d.status === 'degraded') return '#ffaa00';
-          return '#00f3ff';
-        }}
-        ringMaxRadius={(d: any) => d.size * 8}
-        ringPropagationSpeed={2}
-        ringRepeatPeriod={1000}
+        ringColor={(d: any) => d.anomaly ? '#ff0033' : '#ff8800'} // Orange or Red
+        ringMaxRadius={(d: any) => 10} // Large radius for region
+        ringPropagationSpeed={0.5}
+        ringRepeatPeriod={2000}
 
         // Atmosphere
-        atmosphereColor="#0055ff" // Deep neon blue atmosphere
-        atmosphereAltitude={0.15} // Tighter glowing halo
+        atmosphereColor="#0033ff" 
+        atmosphereAltitude={0.15}
         
-        // Styling options
         width={typeof window !== 'undefined' ? window.innerWidth : 800}
         height={typeof window !== 'undefined' ? window.innerHeight : 800}
       />

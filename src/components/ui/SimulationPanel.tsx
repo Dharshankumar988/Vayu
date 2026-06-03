@@ -186,7 +186,7 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
             {executed ? (
               <div className="w-full py-2 mt-2 rounded border border-neon-green/50 bg-neon-green/10 text-neon-green text-xs font-semibold uppercase flex items-center justify-center gap-2">
                 <CheckCircle className="w-4 h-4" />
-                Action Executed
+                Strategy Deployed
               </div>
             ) : (
               <button 
@@ -195,9 +195,14 @@ export default function SimulationPanel({ onClose, defaultSystem }: { onClose: (
                 className="w-full py-2 mt-2 rounded border border-neon-green text-neon-green hover:bg-neon-green/10 text-xs font-semibold uppercase transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {executing ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Executing...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Deploying Protocol...</>
                 ) : (
-                  "Approve & Execute"
+                  <>
+                    {activeSystem === 'Traffic Optimizer' && 'Execute BGP Route Shift'}
+                    {activeSystem === 'Threat Defense' && 'Deploy Null Route & WAF Rules'}
+                    {activeSystem === 'Allocation' && 'Provision Hardware'}
+                    {activeSystem === 'Cost Efficiency' && 'Initiate VM Live Migration'}
+                  </>
                 )}
               </button>
             )}

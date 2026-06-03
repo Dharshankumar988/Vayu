@@ -14,10 +14,14 @@ interface AppState {
   user: User | null;
   setUser: (user: User | null) => void;
   
-  // View State (0 = Global, 1 = Regional, 2 = Data Center Interior)
+  // View State (0 = Global/Region, 1 = Data Center Interior)
   viewLayer: number;
   setViewLayer: (layer: number) => void;
   
+  // Selected Region to focus the globe on
+  selectedRegionId: string | null;
+  setSelectedRegionId: (id: string | null) => void;
+
   // Selected Data Center for Zooming In
   selectedDataCenterId: string | null;
   setSelectedDataCenterId: (id: string | null) => void;
@@ -30,6 +34,9 @@ export const useAppStore = create<AppState>((set) => ({
   viewLayer: 0,
   setViewLayer: (layer) => set({ viewLayer: layer }),
   
+  selectedRegionId: null,
+  setSelectedRegionId: (id) => set({ selectedRegionId: id }),
+
   selectedDataCenterId: null,
   setSelectedDataCenterId: (id) => set({ selectedDataCenterId: id }),
 }));

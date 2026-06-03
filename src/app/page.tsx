@@ -4,7 +4,6 @@ import { useEffect, useState, useMemo } from "react";
 import { Globe, Server, Activity, ShieldAlert, Cpu, LogOut, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import GlobeView from "@/components/3d/Layer1/GlobeView";
-import Layer2Regional from "@/components/3d/Layer2/Layer2Regional";
 import DataCenterInterior from "@/components/3d/Layer3/DataCenterInterior";
 import { MOCK_DATA_CENTERS } from "@/lib/mockData";
 import { useAppStore } from "@/store";
@@ -12,14 +11,17 @@ import { useSimulationStore } from "@/store/simulationStore";
 import LoginPanel from "@/components/ui/LoginPanel";
 import SimulationPanel from "@/components/ui/SimulationPanel";
 import AdminCapacityPanel from "@/components/ui/AdminCapacityPanel";
-import { Map } from "lucide-react";
+import { Map, List } from "lucide-react";
 
 export default function Home() {
   const user = useAppStore((state) => state.user);
   const setUser = useAppStore((state) => state.setUser);
   const viewLayer = useAppStore((state) => state.viewLayer);
   const setViewLayer = useAppStore((state) => state.setViewLayer);
+  const selectedRegionId = useAppStore((state) => state.selectedRegionId);
+  const setSelectedRegionId = useAppStore((state) => state.setSelectedRegionId);
   const updateSimulation = useSimulationStore((state) => state.updateSimulation);
+  const regions = useSimulationStore((state) => state.regions);
   
   const [mounted, setMounted] = useState(false);
   const [activeAiSystem, setActiveAiSystem] = useState<any>(null);
@@ -67,8 +69,8 @@ export default function Home() {
         <SimulationPanel defaultSystem={activeAiSystem} onClose={() => setActiveAiSystem(null)} />
       )}
       
-      {/* Admin Capacity Panel (Visible in Regional View) */}
-      {user && user.role === 'admin' && viewLayer === 1 && (
+      {/* Admin Capacity Panel (Visible in Global View when Admin) */}
+      {user && user.role === 'admin' && viewLayer === 0 && (
         <AdminCapacityPanel />
       )}
 
@@ -95,6 +97,42 @@ export default function Home() {
             </button>
           </motion.div>
 
+          {/* Regional Sidebar List (Visible on Global View) */}
+          {viewLayer === 0 && (
+            <motion.div 
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="absolute top-24 left-8 z-20 glass-panel-neon w-80 p-4"
+            >
+              <div className="flex items-center gap-2 mb-4 text-neon-blue border-b border-white/10 pb-2">
+                <List className="w-5 h-5" />
+                <h3 className="font-semibold uppercase tracking-wider text-sm">Global Regions</h3>
+              </div>
+              <div className="flex flex-col gap-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                {Object.values(regions).map((region) => (
+                  <div 
+                    key={region.id}
+                    onClick={() => setSelectedRegionId(selectedRegionId === region.id ? null : region.id)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                      selectedRegionId === region.id 
+                        ? 'bg-neon-blue/20 border-neon-blue shadow-[0_0_15px_rgba(0,243,255,0.3)]' 
+                        : 'bg-black/30 border-white/10 hover:border-white/30'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-white font-medium text-sm">{region.name}</span>
+                      {region.trafficAnomaly && <ShieldAlert className="w-4 h-4 text-neon-red animate-pulse" />}
+                    </div>
+                    <div className="flex justify-between mt-2 text-xs">
+                      <span className="text-gray-400">Users: {(region.users / 1000).toFixed(0)}k</span>
+                      <span className={region.load > 0.8 ? 'text-neon-red' : 'text-neon-green'}>Load: {(region.load * 100).toFixed(0)}%</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {/* Bottom Control Bar */}
           <motion.div 
             initial={{ opacity: 0, y: 50 }}
@@ -111,19 +149,11 @@ export default function Home() {
             </div>
             <div className="w-px h-10 bg-white/10" />
             <div 
-              onClick={() => setViewLayer(1)}
-              className={`flex flex-col items-center gap-2 cursor-pointer transition-colors ${viewLayer === 1 ? 'text-neon-green' : 'text-gray-400 hover:text-neon-green'}`}
-            >
-              <Map className="w-6 h-6" />
-              <span className="text-xs uppercase">Regional View</span>
-            </div>
-            <div className="w-px h-10 bg-white/10" />
-            <div 
-              onClick={() => setViewLayer(2)}
-              className={`flex flex-col items-center gap-2 cursor-pointer transition-colors ${viewLayer === 2 ? 'text-neon-purple' : 'text-gray-400 hover:text-neon-purple'}`}
+              onClick={() => { setViewLayer(1); setSelectedRegionId(null); }}
+              className={`flex flex-col items-center gap-2 cursor-pointer transition-colors ${viewLayer === 1 ? 'text-neon-purple' : 'text-gray-400 hover:text-neon-purple'}`}
             >
               <Server className="w-6 h-6" />
-              <span className="text-xs uppercase">Data Centers</span>
+              <span className="text-xs uppercase">Data Center</span>
             </div>
             <div className="w-px h-10 bg-white/10" />
             
@@ -173,8 +203,7 @@ export default function Home() {
       {/* 3D Canvas Switcher */}
       <div className="absolute inset-0 z-0">
         {viewLayer === 0 && <GlobeView dataCenters={filteredDataCenters} onDataCenterClick={() => setViewLayer(1)} />}
-        {viewLayer === 1 && <Layer2Regional />}
-        {viewLayer === 2 && <DataCenterInterior />}
+        {viewLayer === 1 && <DataCenterInterior />}
       </div>
     </main>
   );
