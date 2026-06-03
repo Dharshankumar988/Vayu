@@ -107,7 +107,7 @@ export default function LoginPanel() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f5e9 50%, #f3e8ff 100%)' }}>
+    <div className="w-screen h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e8f5e9 50%, #f3e8ff 100%)' }}>
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.08) 0%, transparent 70%)' }} />

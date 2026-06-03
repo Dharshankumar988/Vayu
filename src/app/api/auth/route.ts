@@ -19,6 +19,16 @@ export async function POST(req: Request) {
       .maybeSingle();
 
     if (error || !user) {
+      // Fallback for demo credentials if DB is unseeded or unreachable
+      if (email === 'admin@vayu.com' && password === 'admin123') {
+        return NextResponse.json({ user: { id: 'admin-fallback', email, role: 'admin', full_name: 'System Admin', approval_status: 'approved' }});
+      }
+      if (email === 'tony@stark.com' && password === 'client123') {
+        return NextResponse.json({ user: { id: 'client-ind-fallback', email, role: 'client', client_type: 'individual', full_name: 'Tony Stark', approval_status: 'approved', preferred_dc_region: 'North_America' }});
+      }
+      if (email === 'bruce@wayne.com' && password === 'client123') {
+        return NextResponse.json({ user: { id: 'client-org-fallback', email, role: 'client', client_type: 'organization', full_name: 'Bruce Wayne', company_name: 'Wayne Enterprises', approval_status: 'approved', preferred_dc_region: 'Europe' }});
+      }
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
     if (user.approval_status === 'pending') {
