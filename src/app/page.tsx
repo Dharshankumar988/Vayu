@@ -35,8 +35,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [updateSimulation]);
 
-  if (!mounted) return null;
-
   const filteredDataCenters = useMemo(() => {
     if (!user) return [];
     if (user.role === 'admin') return MOCK_DATA_CENTERS;
@@ -44,6 +42,8 @@ export default function Home() {
     if (user.role === 'client') return MOCK_DATA_CENTERS.filter(dc => dc.clients?.includes(user.company_name));
     return [];
   }, [user]);
+
+  if (!mounted) return null;
 
   return (
     <main className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center bg-[#070715]">
