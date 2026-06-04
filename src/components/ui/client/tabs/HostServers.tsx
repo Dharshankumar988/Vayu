@@ -60,6 +60,15 @@ export default function HostServers() {
       .filter((s) => s.status === "available").length;
   }, [selectedDC]);
 
+  const deployableSlots = useMemo(() => {
+    if (!selectedDC) return [];
+    const allSlots = selectedDC.rooms.flatMap(r => r.racks.flatMap(rk => rk.slots));
+    return selectedSlotIds.filter(id => {
+      const s = allSlots.find(slot => slot.id === id);
+      return s?.status === "available";
+    });
+  }, [selectedSlotIds, selectedDC]);
+
   const userSlots = useMemo(() => {
     if (!user) return [];
     return dataCenters.flatMap((dc) =>
@@ -73,7 +82,7 @@ export default function HostServers() {
 
   const SLOT_PRICE = 120; // $120/slot/month
   const discount = duration >= 12 ? 0.2 : duration >= 6 ? 0.1 : 0;
-  const slotCount = selectedSlotIds.length || 1;
+  const slotCount = deployableSlots.length || 1;
   const totalCost = SLOT_PRICE * duration * slotCount * (1 - discount);
 
   const handleSelectDC = (dcId: string) => {
@@ -85,8 +94,8 @@ export default function HostServers() {
   const handlePayment = async () => {
     setPaying(true);
     await new Promise((r) => setTimeout(r, 2000));
-    // Update all selected slots in store
-    selectedSlotIds.forEach((id) => {
+    // Update all selected available slots in store
+    deployableSlots.forEach((id) => {
       updateSlotStatus(id, "occupied", user?.id, user?.full_name, serverName || "My Server");
     });
     addNotification({
@@ -144,7 +153,7 @@ export default function HostServers() {
               ["Data Center", selectedDC?.name],
               ["Region", selectedRegion.replace("_", " ")],
               ["Server Name", serverName || "My Server"],
-              ["Slot Count", selectedSlotIds.length.toString()],
+              ["Slot Count", deployableSlots.length.toString()],
               ["Rate", `$${SLOT_PRICE}/slot/month`],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between text-sm">
@@ -221,10 +230,10 @@ export default function HostServers() {
               <p className="text-xs text-slate-400">{availableSlots} slots available — click a green slot to select</p>
             </div>
           </div>
-          {selectedSlotIds.length > 0 && (
+          {deployableSlots.length > 0 && (
             <button onClick={() => setStep("billing")}
               className="btn-primary flex items-center gap-2 px-5 py-2">
-              Deploy {selectedSlotIds.length} Slot{selectedSlotIds.length > 1 ? 's' : ''} <ChevronRight className="w-4 h-4" />
+              Deploy {deployableSlots.length} Slot{deployableSlots.length > 1 ? 's' : ''} <ChevronRight className="w-4 h-4" />
             </button>
           )}
         </div>

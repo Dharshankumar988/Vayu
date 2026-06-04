@@ -36,9 +36,19 @@ function SlotMesh({
 
   // Color coding
   const { color, emissive } = useMemo(() => {
-    if (isSelected) {
+    // If it's owned by this user, always green (even if selected for viewing)
+    if (slot.status === 'occupied' && isOwned) {
+      return { color: '#4ade80', emissive: '#16a34a' }; // Green for owned
+    }
+    // If it's selected to be bought (available + selected)
+    if (isSelected && slot.status === 'available') {
       return { color: '#fde047', emissive: '#eab308' }; // Bright Yellow for selected slots
     }
+    // If it's selected to be viewed but occupied by someone else (shouldn't really happen, but just in case)
+    if (isSelected && slot.status === 'occupied') {
+      return { color: '#cbd5e1', emissive: '#94a3b8' }; // Keep it grey
+    }
+    
     if (slot.status === 'available') {
       return { color: '#c084fc', emissive: '#9333ea' }; // Light purple for empty slots
     }
@@ -47,9 +57,6 @@ function SlotMesh({
     }
     if (slot.status === 'maintenance') {
       return { color: '#f59e0b', emissive: '#b45309' }; // Default amber
-    }
-    if (slot.status === 'occupied' && isOwned) {
-      return { color: '#4ade80', emissive: '#16a34a' }; // Green for owned (hosted) servers
     }
     // occupied by other user
     return { color: '#cbd5e1', emissive: '#94a3b8' }; // Grey for occupied
@@ -229,11 +236,11 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       <mesh position={[0, RACK_H / 2, RACK_D / 2 + 0.001]}>
         <planeGeometry args={[RACK_W - 0.1, RACK_H - 0.1]} />
         <meshStandardMaterial
-          color="#1e3a8a"
-          roughness={0.2}
-          metalness={0.8}
+          color="#60a5fa"
+          roughness={0.1}
+          metalness={0.9}
           transparent
-          opacity={0.4}
+          opacity={0.15}
         />
       </mesh>
 
