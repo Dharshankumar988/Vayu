@@ -83,12 +83,12 @@ function SlotMesh({
   });
 
   const emissiveIntensity = useMemo(() => {
-    if (clicked) return 2.0;
-    if (hovered) return 1.5;
-    if (isSelected) return 1.5;
-    if (slot.status === 'available') return 0.6;
-    if (isOwned) return 0.8;
-    return 0.3;
+    if (clicked) return 3.0;
+    if (hovered) return 2.5;
+    if (isSelected) return 2.5;
+    if (slot.status === 'available') return 1.2;
+    if (isOwned) return 1.8;
+    return 0.6;
   }, [hovered, clicked, slot.status, isOwned, isSelected]);
 
   return (
@@ -107,7 +107,7 @@ function SlotMesh({
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
         onPointerOut={() => setHovered(false)}
       >
-        <boxGeometry args={[0.85, 0.42, 0.55]} />
+        <boxGeometry args={[1.0, 0.45, 0.7]} />
         <meshStandardMaterial
           color={color}
           emissive={emissive}
@@ -117,14 +117,14 @@ function SlotMesh({
         />
         {/* Subtle metallic outline to make slot clearly distinguishable */}
         <lineSegments>
-          <edgesGeometry args={[new THREE.BoxGeometry(0.85, 0.42, 0.55)]} />
+          <edgesGeometry args={[new THREE.BoxGeometry(1.0, 0.45, 0.7)]} />
           <lineBasicMaterial color="#ffffff" transparent opacity={0.25} />
         </lineSegments>
       </mesh>
 
       {/* LED indicator strip on the right side */}
-      <mesh position={[position[0] + 0.42, position[1], position[2]]}>
-        <boxGeometry args={[0.02, 0.38, 0.1]} />
+      <mesh position={[position[0] + 0.5, position[1], position[2] + 0.35]}>
+        <boxGeometry args={[0.02, 0.41, 0.05]} />
         <meshStandardMaterial
           color={color}
           emissive={emissive}
@@ -241,7 +241,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
           roughness={0.2}
           metalness={0.2}
           transparent
-          opacity={0.15}
+          opacity={0.05}
         />
       </mesh>
 
@@ -278,7 +278,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
           <SlotMesh
             key={slot.id}
             slot={slot}
-            position={[0, y, 0.05]}
+            position={[0, y, 0.15]}
             onClick={() => onSlotClick(slot)}
             currentUserId={currentUserId}
             isSelected={selectedSlotIds.includes(slot.id)}
@@ -290,7 +290,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       {[0, 1, 2].map((i) => {
         const y = RACK_H / 2 + slotStartY + SLOT_H / 2 + i * (SLOT_H + DIVIDER_H) + DIVIDER_H / 2;
         return (
-          <mesh key={`div-${i}`} position={[0, y, 0.05]}>
+          <mesh key={`div-${i}`} position={[0, y, 0.15]}>
             <boxGeometry args={[1.0, DIVIDER_H, 0.6]} />
             <meshStandardMaterial color="#444444" metalness={0.9} roughness={0.3} />
           </mesh>
