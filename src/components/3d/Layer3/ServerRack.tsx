@@ -230,7 +230,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       {/* Main body panels — light blue shades */}
       <mesh position={[0, RACK_H / 2, 0]} castShadow>
         <boxGeometry args={[RACK_W, RACK_H, RACK_D]} />
-        <meshStandardMaterial color="#bfdbfe" roughness={0.7} metalness={0.4} />
+        <meshStandardMaterial color="#bfdbfe" roughness={0.9} metalness={0.1} />
       </mesh>
 
       {/* Front face — tinted glass / perforated mesh look */}
@@ -238,8 +238,8 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
         <planeGeometry args={[RACK_W - 0.1, RACK_H - 0.1]} />
         <meshStandardMaterial
           color="#60a5fa"
-          roughness={0.1}
-          metalness={0.9}
+          roughness={0.2}
+          metalness={0.2}
           transparent
           opacity={0.15}
         />
@@ -250,8 +250,8 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
         <boxGeometry args={[RACK_W + 0.04, RACK_H + 0.04, RACK_D + 0.04]} />
         <meshStandardMaterial
           color="#93c5fd"
-          roughness={0.5}
-          metalness={0.7}
+          roughness={0.8}
+          metalness={0.1}
           transparent
           opacity={0.9}
         />
@@ -260,14 +260,14 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       {/* Top cap panel */}
       <mesh position={[0, RACK_H + 0.02, 0]}>
         <boxGeometry args={[RACK_W + 0.02, 0.04, RACK_D + 0.02]} />
-        <meshStandardMaterial color="#60a5fa" roughness={0.5} metalness={0.8} />
+        <meshStandardMaterial color="#60a5fa" roughness={0.8} metalness={0.1} />
       </mesh>
 
       {/* Two vertical edge pillars */}
       {[-RACK_W / 2 - 0.01, RACK_W / 2 + 0.01].map((x) => (
         <mesh key={x} position={[x, RACK_H / 2, RACK_D / 2]}>
           <boxGeometry args={[0.06, RACK_H, 0.06]} />
-          <meshStandardMaterial color="#3b82f6" roughness={0.4} metalness={0.8} />
+          <meshStandardMaterial color="#3b82f6" roughness={0.8} metalness={0.1} />
         </mesh>
       ))}
 
