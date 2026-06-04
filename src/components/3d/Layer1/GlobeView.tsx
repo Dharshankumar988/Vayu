@@ -72,11 +72,21 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
     }
   }, [selectedRegionId, regions]);
 
-  // Animate glow rings on pyramids
+  // Animate glow rings on pyramids and enforce free spin
   useEffect(() => {
     let frameId: number;
     const animate = () => {
       glowAnimRef.current = performance.now() * 0.001;
+      
+      // Force autoRotate if no region is selected
+      if (globeRef.current && !useAppStore.getState().selectedRegionId) {
+        const ctrl = globeRef.current.controls();
+        if (ctrl && !ctrl.autoRotate) {
+          ctrl.autoRotate = true;
+          ctrl.autoRotateSpeed = 0.4;
+        }
+      }
+      
       frameId = requestAnimationFrame(animate);
     };
     frameId = requestAnimationFrame(animate);

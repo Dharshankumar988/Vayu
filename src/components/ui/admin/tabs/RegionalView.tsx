@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Globe, ChevronRight, ArrowLeft, Server, Cpu } from "lucide-react";
 import { useAppStore } from "@/store";
+import { useEffect } from "react";
 import { useDCStore } from "@/store/dcStore";
 import { useSimulationStore } from "@/store/simulationStore";
 import dynamic from "next/dynamic";
@@ -20,9 +21,18 @@ export default function RegionalView() {
   const setViewMode = useAppStore((s) => s.setViewMode);
   const setSelectedRegionId = useAppStore((s) => s.setSelectedRegionId);
   const dataCenters = useDCStore((s) => s.dataCenters);
+  const dcError = useDCStore((s) => s.error);
+  const isLoading = useDCStore((s) => s.isLoading);
   const regions = useSimulationStore((s) => s.regions);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [showGlobe, setShowGlobe] = useState(true);
+
+  // Force load if empty
+  useEffect(() => {
+    if (dataCenters.length === 0 && !isLoading && !dcError) {
+      useDCStore.getState().loadFromServer();
+    }
+  }, [dataCenters.length, isLoading, dcError]);
 
   const regionDCs = dataCenters.filter((dc) => dc.region === selectedRegion);
 
@@ -53,9 +63,18 @@ export default function RegionalView() {
         <div className="w-80 h-full bg-white/90 backdrop-blur-xl border-r border-slate-200/50 flex flex-col pointer-events-auto shadow-[4px_0_24px_rgba(0,0,0,0.05)]">
           <div className="px-5 py-5 border-b border-slate-200/50 bg-white/50">
             <h2 className="font-bold text-slate-900 text-lg">Global Regions</h2>
-            <p className="text-xs text-slate-500 mt-1">{dataCenters.length} data centers worldwide</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {isLoading ? "Loading data centers..." : `${dataCenters.length} data centers worldwide`}
+            </p>
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar">
+            {dcError && (
+              <div className="m-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs shadow-sm">
+                <p className="font-bold mb-1">Database Error</p>
+                <p>{dcError}</p>
+                <p className="mt-2 text-[10px] text-red-500 font-mono">Check if your .env.local matches your new Supabase project credentials!</p>
+              </div>
+            )}
             {REGION_ORDER.map((regionId) => {
               const regionData = regions[regionId];
               const dcCount = dataCenters.filter((d) => d.region === regionId).length;
