@@ -50,43 +50,38 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
     return () => observer.disconnect();
   }, []);
 
-  // Region zoom — smoothly moves camera but NEVER disables controls
+  // Region zoom — smoothly moves camera
   useEffect(() => {
     if (!globeRef.current) return;
+    const ctrl = globeRef.current.controls();
+    if (!ctrl) return;
+
     if (selectedRegionId && regions[selectedRegionId]) {
       const r = regions[selectedRegionId];
-      // Smoothly pan to region but keep controls fully enabled
+      // Stop rotating immediately when zooming into a region
+      ctrl.autoRotate = false;
       globeRef.current.pointOfView({ lat: r.lat, lng: r.lng, altitude: 1.6 }, 1800);
-      // Do NOT disable autoRotate or any controls — user can still interact freely
     } else {
+      // Zoom out to global view
       globeRef.current.pointOfView({ altitude: 2.8 }, 1800);
+      // Wait for zoom animation to finish before starting rotation again
       setTimeout(() => {
         if (globeRef.current) {
-          const ctrl = globeRef.current.controls();
-          if (ctrl) {
-            ctrl.autoRotate = true;
-            ctrl.autoRotateSpeed = 0.3;
+          const currentCtrl = globeRef.current.controls();
+          if (currentCtrl && !useAppStore.getState().selectedRegionId) {
+            currentCtrl.autoRotate = true;
+            currentCtrl.autoRotateSpeed = 0.8; // Spin a bit faster so it's noticeable
           }
         }
       }, 1850);
     }
   }, [selectedRegionId, regions]);
 
-  // Animate glow rings on pyramids and enforce free spin
+  // Animate glow rings on pyramids
   useEffect(() => {
     let frameId: number;
     const animate = () => {
       glowAnimRef.current = performance.now() * 0.001;
-      
-      // Force autoRotate if no region is selected
-      if (globeRef.current && !useAppStore.getState().selectedRegionId) {
-        const ctrl = globeRef.current.controls();
-        if (ctrl && !ctrl.autoRotate) {
-          ctrl.autoRotate = true;
-          ctrl.autoRotateSpeed = 0.4;
-        }
-      }
-      
       frameId = requestAnimationFrame(animate);
     };
     frameId = requestAnimationFrame(animate);
