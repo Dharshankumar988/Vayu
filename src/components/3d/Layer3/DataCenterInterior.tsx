@@ -18,6 +18,27 @@ function RoomFloor() {
   );
 }
 
+function RoomGlassCuboid() {
+  return (
+    <mesh position={[0, 5, 0]}>
+      <boxGeometry args={[18.2, 10, 14.2]} />
+      <meshStandardMaterial
+        color="#ffffff"
+        transparent
+        opacity={0.1}
+        roughness={0.1}
+        metalness={0.9}
+        depthWrite={false}
+      />
+      {/* Wireframe edges to make it look like glass panels */}
+      <lineSegments>
+        <edgesGeometry args={[new THREE.BoxGeometry(18.2, 10, 14.2)]} />
+        <lineBasicMaterial color="#ffffff" transparent opacity={0.3} />
+      </lineSegments>
+    </mesh>
+  );
+}
+
 function NeonCable({ numRooms }: { numRooms: number }) {
   const meshRef = useRef<THREE.Mesh>(null);
   
@@ -188,7 +209,8 @@ export default function DataCenterInterior() {
             return (
               <group key={room.id} position={[0, 0, zOffset]}>
                 <RoomFloor />
-                <RoomLabel text={room.name} position={[0, 6, 0]} />
+                <RoomGlassCuboid />
+                <RoomLabel text={room.name} position={[0, 10.5, 0]} />
 
                 {/* Racks in the room */}
                 {room.racks.map((rack, i) => {

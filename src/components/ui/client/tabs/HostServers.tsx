@@ -35,6 +35,7 @@ export default function HostServers() {
   const [selectedDCId, setSelectedDCId] = useState("");
   const selectedSlotId = useAppStore((s) => s.selectedSlotId);
   const setSelectedSlotId = useAppStore((s) => s.setSelectedSlotId);
+  const setSelectedRegionId = useAppStore((s) => s.setSelectedRegionId);
   const [serverName, setServerName] = useState("");
   const [duration, setDuration] = useState(1);
   const [paying, setPaying] = useState(false);
@@ -112,6 +113,7 @@ export default function HostServers() {
             setSelectedSlotId("");
             setSelectedDCId("");
             setSelectedRegion("");
+            setSelectedRegionId(null);
           }}
           className="btn-primary px-8 py-3"
         >
@@ -244,7 +246,7 @@ export default function HostServers() {
         {/* Floating Overlays */}
         <div className="absolute inset-0 z-10 pointer-events-none flex p-6">
           <div className="w-[400px] h-full flex flex-col pointer-events-auto">
-            <button onClick={() => setStep("region")} className="mb-4 self-start bg-white/10 hover:bg-white/20 text-white backdrop-blur-md px-4 py-2 rounded-lg text-sm transition-all border border-white/10 flex items-center gap-2">
+            <button onClick={() => { setStep("region"); setSelectedRegionId(null); }} className="mb-4 self-start bg-white/10 hover:bg-white/20 text-white backdrop-blur-md px-4 py-2 rounded-lg text-sm transition-all border border-white/10 flex items-center gap-2">
               ← Back to Regions
             </button>
             <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200/50 flex flex-col flex-1 overflow-hidden animate-in slide-in-from-left-8 duration-300">
@@ -294,18 +296,18 @@ export default function HostServers() {
   return (
     <div className="relative w-full h-full overflow-hidden bg-[#050814]">
       {/* Fullscreen Globe Background */}
-      <div className="absolute inset-0 z-0 opacity-80 pointer-events-none">
+      <div className="absolute inset-0 z-0">
         <GlobeView onDataCenterClick={() => {}} />
       </div>
 
-      <div className="absolute inset-0 z-10 flex flex-col h-full bg-slate-50/70 backdrop-blur-sm overflow-hidden pointer-events-auto">
-        <div className="px-6 py-4 bg-white/90 backdrop-blur-md border-b border-slate-200/50 flex gap-4">
+      <div className="absolute inset-0 z-10 flex flex-col h-full bg-slate-50/40 backdrop-blur-sm overflow-hidden pointer-events-none">
+        <div className="px-6 py-4 bg-white/90 backdrop-blur-md border-b border-slate-200/50 flex gap-4 pointer-events-auto">
           <button onClick={() => setActiveTab("host")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "host" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Host New Server</button>
           <button onClick={() => setActiveTab("manage")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "manage" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Manage My Servers ({userSlots.length})</button>
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 pointer-events-none">
           {activeTab === "host" ? (
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto pointer-events-auto">
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-slate-900 mb-2">Choose a Region</h2>
                 <p className="text-slate-700 font-medium">Select a region to view available data centers on the interactive globe.</p>
@@ -315,7 +317,7 @@ export default function HostServers() {
                   const dcsInRegion = dataCenters.filter((d) => d.region === region.id && !d.is_isolated);
                   const totalAvail = dcsInRegion.reduce((sum, dc) => sum + dc.rooms.flatMap((r) => r.racks.flatMap((rack) => rack.slots)).filter((s) => s.status === "available").length, 0);
                   return (
-                    <button key={region.id} onClick={() => { setSelectedRegion(region.id); setStep("dc"); }} className="bg-white/95 backdrop-blur-md rounded-2xl p-6 text-left border border-white/20 shadow-lg hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all group">
+                    <button key={region.id} onClick={() => { setSelectedRegion(region.id); setSelectedRegionId(region.id); setStep("dc"); }} className="bg-white/95 backdrop-blur-md rounded-2xl p-6 text-left border border-white/20 shadow-lg hover:shadow-xl hover:border-blue-300 hover:-translate-y-1 transition-all group">
                       <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-4 group-hover:bg-blue-600 transition-colors">
                         <MapPin className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
                       </div>
@@ -330,8 +332,8 @@ export default function HostServers() {
             </div>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-4">
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">Active Servers</h2>
+          <div className="max-w-4xl mx-auto space-y-4 pointer-events-auto">
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 drop-shadow-md">Active Servers</h2>
             {userSlots.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed">
                 <Cpu className="w-12 h-12 text-slate-300 mx-auto mb-4" />

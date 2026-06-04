@@ -35,19 +35,19 @@ function SlotMesh({
   // Color coding
   const { color, emissive } = useMemo(() => {
     if (slot.status === 'available') {
-      return { color: '#22c55e', emissive: '#16a34a' };
+      return { color: '#c084fc', emissive: '#9333ea' }; // Light purple for empty slots
     }
     if (slot.status === 'reserved') {
-      return { color: '#8b5cf6', emissive: '#7c3aed' };
+      return { color: '#8b5cf6', emissive: '#7c3aed' }; // Default reserved purple
     }
     if (slot.status === 'maintenance') {
-      return { color: '#f59e0b', emissive: '#b45309' };
+      return { color: '#f59e0b', emissive: '#b45309' }; // Default amber
     }
     if (slot.status === 'occupied' && isOwned) {
-      return { color: '#3b82f6', emissive: '#2563eb' };
+      return { color: '#4ade80', emissive: '#16a34a' }; // Green for owned (hosted) servers
     }
     // occupied by other user
-    return { color: '#94a3b8', emissive: '#64748b' };
+    return { color: '#cbd5e1', emissive: '#94a3b8' }; // Grey for occupied
   }, [slot.status, isOwned]);
 
   // Deterministic values from cpu_util
@@ -208,21 +208,21 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       onPointerOver={(e) => { e.stopPropagation(); setRackHovered(true); }}
       onPointerOut={() => setRackHovered(false)}
     >
-      {/* Main body panels — dark professional black/grey */}
+      {/* Main body panels — light blue shades */}
       <mesh position={[0, RACK_H / 2, 0]} castShadow>
         <boxGeometry args={[RACK_W, RACK_H, RACK_D]} />
-        <meshStandardMaterial color="#111111" roughness={0.7} metalness={0.4} />
+        <meshStandardMaterial color="#bfdbfe" roughness={0.7} metalness={0.4} />
       </mesh>
 
       {/* Front face — tinted glass / perforated mesh look */}
       <mesh position={[0, RACK_H / 2, RACK_D / 2 + 0.001]}>
         <planeGeometry args={[RACK_W - 0.1, RACK_H - 0.1]} />
         <meshStandardMaterial
-          color="#000000"
+          color="#1e3a8a"
           roughness={0.2}
           metalness={0.8}
           transparent
-          opacity={0.65}
+          opacity={0.4}
         />
       </mesh>
 
@@ -230,7 +230,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       <mesh position={[0, RACK_H / 2, 0]}>
         <boxGeometry args={[RACK_W + 0.04, RACK_H + 0.04, RACK_D + 0.04]} />
         <meshStandardMaterial
-          color="#222222"
+          color="#93c5fd"
           roughness={0.5}
           metalness={0.7}
           transparent
@@ -241,14 +241,14 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       {/* Top cap panel */}
       <mesh position={[0, RACK_H + 0.02, 0]}>
         <boxGeometry args={[RACK_W + 0.02, 0.04, RACK_D + 0.02]} />
-        <meshStandardMaterial color="#1a1a1a" roughness={0.5} metalness={0.8} />
+        <meshStandardMaterial color="#60a5fa" roughness={0.5} metalness={0.8} />
       </mesh>
 
       {/* Two vertical edge pillars */}
       {[-RACK_W / 2 - 0.01, RACK_W / 2 + 0.01].map((x) => (
         <mesh key={x} position={[x, RACK_H / 2, RACK_D / 2]}>
           <boxGeometry args={[0.06, RACK_H, 0.06]} />
-          <meshStandardMaterial color="#333333" roughness={0.4} metalness={0.8} />
+          <meshStandardMaterial color="#3b82f6" roughness={0.4} metalness={0.8} />
         </mesh>
       ))}
 
