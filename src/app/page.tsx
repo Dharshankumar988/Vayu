@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useMemo } from "react";
 import { useAppStore } from "@/store";
+import { useDCStore } from "@/store/dcStore";
 import { useSimulationStore } from "@/store/simulationStore";
 import { useUIStore } from "@/store/uiStore";
 import { startAILoop, stopAILoop } from "@/lib/aiEngine";
@@ -42,6 +43,9 @@ export default function Home() {
       }
       return;
     }
+
+    // Load data centers from backend
+    useDCStore.getState().loadFromServer();
 
     // Start simulation engine (local state only, no API calls)
     simIntervalRef.current = setInterval(() => {
