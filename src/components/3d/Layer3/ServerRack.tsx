@@ -11,6 +11,7 @@ interface ServerRackProps {
   rack: Rack;
   onSlotClick: (slot: ServerSlot) => void;
   currentUserId: string | null;
+  selectedSlotIds?: string[];
 }
 
 // --- Slot component ---
@@ -24,6 +25,7 @@ function SlotMesh({
   position: [number, number, number];
   onClick: () => void;
   currentUserId: string | null;
+  isSelected?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
@@ -34,6 +36,9 @@ function SlotMesh({
 
   // Color coding
   const { color, emissive } = useMemo(() => {
+    if (isSelected) {
+      return { color: '#fde047', emissive: '#eab308' }; // Bright Yellow for selected slots
+    }
     if (slot.status === 'available') {
       return { color: '#c084fc', emissive: '#9333ea' }; // Light purple for empty slots
     }
@@ -48,7 +53,7 @@ function SlotMesh({
     }
     // occupied by other user
     return { color: '#cbd5e1', emissive: '#94a3b8' }; // Grey for occupied
-  }, [slot.status, isOwned]);
+  }, [slot.status, isOwned, isSelected]);
 
   // Deterministic values from cpu_util
   const temperature = useMemo(() => (slot.cpu_util * 30 + 20).toFixed(1), [slot.cpu_util]);
@@ -72,10 +77,11 @@ function SlotMesh({
   const emissiveIntensity = useMemo(() => {
     if (clicked) return 2.0;
     if (hovered) return 1.2;
+    if (isSelected) return 1.5;
     if (slot.status === 'available') return 0.3;
     if (isOwned) return 0.5;
     return 0.1;
-  }, [hovered, clicked, slot.status, isOwned]);
+  }, [hovered, clicked, slot.status, isOwned, isSelected]);
 
   return (
     <group>
@@ -184,7 +190,7 @@ function SlotMesh({
 }
 
 // --- Main rack cabinet ---
-export default function ServerRackCabinet({ position, rack, onSlotClick, currentUserId }: ServerRackProps) {
+export default function ServerRackCabinet({ position, rack, onSlotClick, currentUserId, selectedSlotIds = [] }: ServerRackProps) {
   const [rackHovered, setRackHovered] = useState(false);
 
   const RACK_W = 1.2;
@@ -267,6 +273,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
             position={[0, y, 0.05]}
             onClick={() => onSlotClick(slot)}
             currentUserId={currentUserId}
+            isSelected={selectedSlotIds.includes(slot.id)}
           />
         );
       })}

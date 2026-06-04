@@ -247,6 +247,17 @@ export default function HostServers() {
     setDeletePassword("");
   };
 
+  const handleViewServer = (slot: any) => {
+    // Navigate to the specific DC and highlight the slot
+    setSelectedRegion(slot.region);
+    setSelectedRegionId(slot.region);
+    setSelectedDCId(slot.dcId);
+    setSelectedDataCenterId(slot.dcId);
+    clearSelectedSlots();
+    useAppStore.getState().toggleSelectedSlotId(slot.id);
+    setStep("interior");
+  };
+
   if (step === "dc") {
     return (
       <div className="relative w-full h-full overflow-hidden bg-[#050814]">
@@ -373,6 +384,9 @@ export default function HostServers() {
                       <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Status</p>
                       <p className={`font-medium ${slot.health === "healthy" ? "text-green-600" : "text-red-600"}`}>{slot.health}</p>
                     </div>
+                    <button onClick={() => handleViewServer(slot)} className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium rounded-xl transition-colors border border-transparent hover:border-blue-200 text-sm">
+                      View in 3D
+                    </button>
                     <button onClick={() => setTerminatingSlotId(slot.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors border border-transparent hover:border-red-100" title="Terminate Server">
                       <Trash2 className="w-5 h-5" />
                     </button>

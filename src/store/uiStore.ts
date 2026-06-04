@@ -90,7 +90,7 @@ export const useUIStore = create<UIState>((set) => ({
       // For this step, we just provide the signature and a dummy fetch if needed.
   },
 
-  showGlobeLegend: false,
+  showGlobeLegend: true,
   toggleGlobeLegend: () =>
     set((state) => ({ showGlobeLegend: !state.showGlobeLegend })),
 
