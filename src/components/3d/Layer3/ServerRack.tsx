@@ -20,6 +20,7 @@ function SlotMesh({
   position,
   onClick,
   currentUserId,
+  isSelected,
 }: {
   slot: ServerSlot;
   position: [number, number, number];

@@ -32,6 +32,7 @@ export default function Home() {
 
   // Track refs for intervals
   const simIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const welcomedUserRef = useRef<string | null>(null);
 
   // Session-scoped effects: start AI loop + simulation tick when user logs in
   useEffect(() => {
@@ -55,16 +56,19 @@ export default function Home() {
     // Start AI loop (calls Groq API only on threshold events)
     startAILoop();
 
-    addNotification({
-      type: "success",
-      title: `Welcome, ${user.full_name}`,
-      message:
-        user.role === "admin"
-          ? "AI monitoring loop active. All 10 data centers online."
-          : `Client portal ready. Hosting region: ${
-              user.preferred_dc_region?.replace("_", " ") ?? "Global"
-            }.`,
-    });
+    if (welcomedUserRef.current !== user.id) {
+      welcomedUserRef.current = user.id;
+      addNotification({
+        type: "success",
+        title: `Welcome, ${user.full_name}`,
+        message:
+          user.role === "admin"
+            ? "AI monitoring loop active. All 10 data centers online."
+            : `Client portal ready. Hosting region: ${
+                user.preferred_dc_region?.replace("_", " ") ?? "Global"
+              }.`,
+      });
+    }
 
     return () => {
       stopAILoop();

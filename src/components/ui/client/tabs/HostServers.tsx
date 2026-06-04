@@ -42,7 +42,7 @@ export default function HostServers() {
   const [activeTab, setActiveTab] = useState<"host" | "manage">("host");
   
   // Deletion modal state
-  const [terminatingSlotId, setTerminatingSlotId] = useState<string | null>(null);
+  const [terminatingServerId, setTerminatingServerId] = useState<string | null>(null);
   const [deletePassword, setDeletePassword] = useState("");
 
   const regionDCs = useMemo(
@@ -79,6 +79,29 @@ export default function HostServers() {
       )
     );
   }, [dataCenters, user]);
+
+  const groupedServers = useMemo(() => {
+    const map = new Map<string, any>();
+    userSlots.forEach(slot => {
+      const key = slot.server_name || slot.id;
+      if (!map.has(key)) {
+        map.set(key, {
+          id: key,
+          name: slot.server_name || "Unnamed Server",
+          health: slot.health,
+          region: slot.region,
+          dcName: slot.dcName,
+          dcId: slot.dcId,
+          slots: [slot]
+        });
+      } else {
+        const existing = map.get(key);
+        existing.slots.push(slot);
+        if (slot.health !== 'healthy') existing.health = slot.health;
+      }
+    });
+    return Array.from(map.values());
+  }, [userSlots]);
 
   const SLOT_PRICE = 120; // $120/slot/month
   const discount = duration >= 12 ? 0.2 : duration >= 6 ? 0.1 : 0;
@@ -245,25 +268,32 @@ export default function HostServers() {
   }
 
   const handleTerminateServer = () => {
-    if (!terminatingSlotId) return;
+    if (!terminatingServerId) return;
     if (deletePassword !== "demo") { // Assume demo password is "demo"
       addNotification({ type: "error", title: "Authentication Failed", message: "Incorrect password. Termination aborted." });
       return;
     }
-    updateSlotStatus(terminatingSlotId, "available", null, null, null);
-    addNotification({ type: "success", title: "Server Terminated", message: "Your server instance has been shut down and billing stopped." });
-    setTerminatingSlotId(null);
+    const server = groupedServers.find(s => s.id === terminatingServerId);
+    if (server) {
+      server.slots.forEach((slot: any) => {
+        updateSlotStatus(slot.id, "available", null, null, null);
+      });
+      addNotification({ type: "success", title: "Server Terminated", message: "Your server instance has been shut down and billing stopped." });
+    }
+    setTerminatingServerId(null);
     setDeletePassword("");
   };
 
-  const handleViewServer = (slot: any) => {
-    // Navigate to the specific DC and highlight the slot
-    setSelectedRegion(slot.region);
-    setSelectedRegionId(slot.region);
-    setSelectedDCId(slot.dcId);
-    setSelectedDataCenterId(slot.dcId);
+  const handleViewServer = (serverGroup: any) => {
+    // Navigate to the specific DC and highlight the slot(s)
+    setSelectedRegion(serverGroup.region);
+    setSelectedRegionId(serverGroup.region);
+    setSelectedDCId(serverGroup.dcId);
+    setSelectedDataCenterId(serverGroup.dcId);
     clearSelectedSlots();
-    useAppStore.getState().toggleSelectedSlotId(slot.id);
+    serverGroup.slots.forEach((slot: any) => {
+      useAppStore.getState().toggleSelectedSlotId(slot.id);
+    });
     setStep("interior");
   };
 
@@ -335,7 +365,7 @@ export default function HostServers() {
       <div className="absolute inset-0 z-10 flex flex-col h-full bg-slate-50/40 backdrop-blur-sm overflow-hidden pointer-events-none">
         <div className="px-6 py-4 bg-white/90 backdrop-blur-md border-b border-slate-200/50 flex gap-4 pointer-events-auto">
           <button onClick={() => setActiveTab("host")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "host" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Host New Server</button>
-          <button onClick={() => setActiveTab("manage")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "manage" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Manage My Servers ({userSlots.length})</button>
+          <button onClick={() => setActiveTab("manage")} className={`px-4 py-2 text-sm font-semibold border-b-2 transition-all ${activeTab === "manage" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Manage My Servers ({groupedServers.length})</button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 pointer-events-none">
           {activeTab === "host" ? (
@@ -366,46 +396,67 @@ export default function HostServers() {
         ) : (
           <div className="max-w-4xl mx-auto space-y-4 pointer-events-auto">
             <h2 className="text-2xl font-bold text-slate-900 mb-6 drop-shadow-md">Active Servers</h2>
-            {userSlots.length === 0 ? (
+            {groupedServers.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 border-dashed">
                 <Cpu className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-500">You don't have any active servers yet.</p>
                 <button onClick={() => setActiveTab("host")} className="mt-4 text-blue-600 font-medium hover:underline">Host one now</button>
               </div>
             ) : (
-              userSlots.map((slot) => (
-                <div key={slot.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
+              groupedServers.map((server) => (
+                <div key={server.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-5">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${slot.health === "healthy" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${server.health === "healthy" ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}>
                       <Server className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-lg">{slot.server_name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-slate-900 text-lg">{server.name}</h3>
+                        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full">{server.slots.length} Node{server.slots.length > 1 ? 's' : ''}</span>
+                      </div>
                       <p className="text-sm text-slate-500 flex items-center gap-2">
-                        <span>{slot.dcName}</span>
+                        <span>{server.dcName}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-300" />
-                        <span className="capitalize">{slot.region.replace("_", " ")}</span>
+                        <span className="capitalize">{server.region.replace("_", " ")}</span>
                       </p>
+                      
+                      {/* Dummy Metrics */}
+                      <div className="flex gap-4 mt-3 border-t border-slate-100 pt-3">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase text-slate-400 font-bold">CPU Load</span>
+                          <span className="text-sm font-mono text-slate-700">{Math.floor(Math.random() * 40 + 10)}%</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase text-slate-400 font-bold">Memory</span>
+                          <span className="text-sm font-mono text-slate-700">{Math.floor(Math.random() * 60 + 20)}%</span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase text-slate-400 font-bold">Uptime</span>
+                          <span className="text-sm font-mono text-green-600">99.9%</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
+                  <div className="flex flex-col items-end gap-3">
                     <div className="text-right">
                       <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Status</p>
-                      <p className={`font-medium ${slot.health === "healthy" ? "text-green-600" : "text-red-600"}`}>{slot.health}</p>
+                      <p className={`font-medium ${server.health === "healthy" ? "text-green-600" : "text-red-600"}`}>{server.health}</p>
                     </div>
-                    <button onClick={() => handleViewServer(slot)} className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium rounded-xl transition-colors border border-transparent hover:border-blue-200 text-sm">
-                      View in 3D
-                    </button>
-                    <button onClick={() => setTerminatingSlotId(slot.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors border border-transparent hover:border-red-100" title="Terminate Server">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleViewServer(server)} className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium rounded-xl transition-colors border border-transparent hover:border-blue-200 text-sm">
+                        View in 3D
+                      </button>
+                      <button onClick={() => setTerminatingServerId(server.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors border border-transparent hover:border-red-100" title="Terminate Server">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
             )}
             
             {/* Termination Modal */}
-            {terminatingSlotId && (
+            {terminatingServerId && (
               <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                 <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-2xl">
                   <h3 className="text-xl font-bold text-slate-900 mb-2">Confirm Deletion</h3>
@@ -419,7 +470,7 @@ export default function HostServers() {
                     onChange={(e) => setDeletePassword(e.target.value)}
                   />
                   <div className="flex justify-end gap-3">
-                    <button onClick={() => { setTerminatingSlotId(null); setDeletePassword(""); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors">Cancel</button>
+                    <button onClick={() => { setTerminatingServerId(null); setDeletePassword(""); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors">Cancel</button>
                     <button onClick={handleTerminateServer} disabled={!deletePassword} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50">Terminate</button>
                   </div>
                 </div>

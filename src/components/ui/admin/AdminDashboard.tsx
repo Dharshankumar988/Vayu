@@ -42,8 +42,8 @@ export default function AdminDashboard() {
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-100">
-          <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-500/30">
-            <Server className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+            <img src="/vayu-logo.svg" alt="Vayu Logo" className="w-full h-full object-contain drop-shadow-md" />
           </div>
           {!sidebarCollapsed && (
             <div>

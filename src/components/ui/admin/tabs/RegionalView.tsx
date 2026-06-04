@@ -159,7 +159,7 @@ export default function RegionalView() {
                     </div>
                     <button onClick={() => handleEnterDC(dc.id)}
                       className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-sm shadow-blue-500/20">
-                      <Server className="w-4 h-4" /> Enter Facility
+                      <Server className="w-4 h-4" /> View Server Rooms
                     </button>
                   </div>
                 ))}

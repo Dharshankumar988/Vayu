@@ -335,7 +335,7 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
       </div>
 
       {/* Globe Legend — exact same neon color scheme */}
-      <div className="absolute bottom-6 left-6 z-20">
+      <div className="absolute bottom-6 right-20 z-20 flex flex-col items-end">
         <button
           onClick={toggleGlobeLegend}
           className="px-3 py-1.5 glass-panel-neon text-xs text-gray-300 rounded-lg hover:bg-white/5 transition-colors flex items-center gap-2"
@@ -343,7 +343,7 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
           <span>📍</span> Legend {showGlobeLegend ? '▲' : '▼'}
         </button>
         {showGlobeLegend && (
-          <div className="mt-2 glass-panel-neon rounded-xl p-4 w-56 animate-slide-in-up">
+          <div className="mt-2 glass-panel-neon rounded-xl p-4 w-56 animate-slide-in-up text-left">
             <p className="text-xs font-bold text-gray-400 uppercase mb-3">Routes</p>
             {[
               { color: '#00ff66', label: 'Normal Traffic' },
