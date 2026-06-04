@@ -50,9 +50,12 @@ function NeonCable({ numRooms }: { numRooms: number }) {
     }
   });
 
-  if (numRooms <= 1) return null;
-  const length = (numRooms - 1) * 20;
-  const zCenter = length / 2;
+  // Center cable should run from the start of the first room to the end of the last room.
+  // Each room is 14 units long in Z (-7 to +7).
+  const startZ = -7;
+  const endZ = Math.max(0, numRooms - 1) * 20 + 7;
+  const length = endZ - startZ;
+  const zCenter = startZ + length / 2;
 
   return (
     <mesh ref={meshRef} position={[0, 0.2, zCenter]} rotation={[Math.PI / 2, 0, 0]}>
@@ -65,6 +68,37 @@ function NeonCable({ numRooms }: { numRooms: number }) {
         opacity={0.9}
         roughness={0.1}
         metalness={0.8}
+      />
+    </mesh>
+  );
+}
+
+function RackCable({ x, z }: { x: number; z: number }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame(({ clock }) => {
+    if (meshRef.current && meshRef.current.material) {
+      const mat = meshRef.current.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity = 1.5 + Math.sin(clock.elapsedTime * 6.0 + x + z) * 1.0;
+    }
+  });
+
+  const length = Math.abs(x);
+  const posX = x / 2;
+
+  // If the rack is on the center line, no horizontal cable is needed
+  if (length === 0) return null;
+
+  return (
+    <mesh ref={meshRef} position={[posX, 0.2, z]} rotation={[0, 0, Math.PI / 2]}>
+      <cylinderGeometry args={[0.04, 0.04, length, 8]} />
+      <meshStandardMaterial
+        color="#00f3ff"
+        emissive="#00f3ff"
+        emissiveIntensity={2}
+        transparent
+        opacity={0.8}
+        roughness={0.2}
       />
     </mesh>
   );
@@ -221,13 +255,15 @@ export default function DataCenterInterior() {
                   const z = row === 0 ? -3.5 : 3.5;
                   
                   return (
-                    <ServerRackCuboid
-                      key={rack.id}
-                      position={[x, 0, z]}
-                      rack={rack}
-                      onSlotClick={(slot) => setSelectedSlotId(slot.id)}
-                      currentUserId={user?.id ?? null}
-                    />
+                    <group key={rack.id}>
+                      <ServerRackCuboid
+                        position={[x, 0, z]}
+                        rack={rack}
+                        onSlotClick={(slot) => setSelectedSlotId(slot.id)}
+                        currentUserId={user?.id ?? null}
+                      />
+                      <RackCable x={x} z={z} />
+                    </group>
                   );
                 })}
               </group>
