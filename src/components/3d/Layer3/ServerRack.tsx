@@ -228,7 +228,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       onPointerOut={() => setRackHovered(false)}
     >
       {/* Main body panel — back plate only so slots are visible */}
-      <mesh position={[0, RACK_H / 2, -RACK_D / 2 + 0.05]} castShadow>
+      <mesh position={[0, RACK_H / 2, -RACK_D / 2 + 0.05]} castShadow raycast={() => null}>
         <boxGeometry args={[RACK_W, RACK_H, 0.1]} />
         <meshStandardMaterial color="#bfdbfe" roughness={0.9} metalness={0.1} />
       </mesh>
@@ -245,27 +245,16 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
         />
       </mesh>
 
-      {/* Frame — metallic edges */}
-      <mesh position={[0, RACK_H / 2, 0]}>
-        <boxGeometry args={[RACK_W + 0.04, RACK_H + 0.04, RACK_D + 0.04]} />
-        <meshStandardMaterial
-          color="#93c5fd"
-          roughness={0.8}
-          metalness={0.1}
-          transparent
-          opacity={0.9}
-        />
-      </mesh>
-
+      {/* Frame — metallic edges (Removed solid box that was blocking clicks) */}
       {/* Top cap panel */}
-      <mesh position={[0, RACK_H + 0.02, 0]}>
+      <mesh position={[0, RACK_H + 0.02, 0]} raycast={() => null}>
         <boxGeometry args={[RACK_W + 0.02, 0.04, RACK_D + 0.02]} />
         <meshStandardMaterial color="#60a5fa" roughness={0.8} metalness={0.1} />
       </mesh>
 
       {/* Two vertical edge pillars */}
       {[-RACK_W / 2 - 0.01, RACK_W / 2 + 0.01].map((x) => (
-        <mesh key={x} position={[x, RACK_H / 2, RACK_D / 2]}>
+        <mesh key={x} position={[x, RACK_H / 2, RACK_D / 2]} raycast={() => null}>
           <boxGeometry args={[0.06, RACK_H, 0.06]} />
           <meshStandardMaterial color="#3b82f6" roughness={0.8} metalness={0.1} />
         </mesh>
@@ -290,7 +279,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       {[0, 1, 2].map((i) => {
         const y = RACK_H / 2 + slotStartY + SLOT_H / 2 + i * (SLOT_H + DIVIDER_H) + DIVIDER_H / 2;
         return (
-          <mesh key={`div-${i}`} position={[0, y, 0.15]}>
+          <mesh key={`div-${i}`} position={[0, y, 0.15]} raycast={() => null}>
             <boxGeometry args={[1.0, DIVIDER_H, 0.6]} />
             <meshStandardMaterial color="#444444" metalness={0.9} roughness={0.3} />
           </mesh>
