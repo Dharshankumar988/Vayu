@@ -60,8 +60,15 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
       // Do NOT disable autoRotate or any controls — user can still interact freely
     } else {
       globeRef.current.pointOfView({ altitude: 2.8 }, 1800);
-      const ctrl = globeRef.current.controls();
-      if (ctrl) ctrl.autoRotate = true;
+      setTimeout(() => {
+        if (globeRef.current) {
+          const ctrl = globeRef.current.controls();
+          if (ctrl) {
+            ctrl.autoRotate = true;
+            ctrl.autoRotateSpeed = 0.3;
+          }
+        }
+      }, 1850);
     }
   }, [selectedRegionId, regions]);
 
