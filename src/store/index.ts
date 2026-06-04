@@ -59,6 +59,8 @@ interface AppState {
 
   selectedSlotId: string | null;
   setSelectedSlotId: (id: string | null) => void;
+
+  revalidateUser: () => Promise<void>;
 }
 
 export const useAppStore = create<AppState>()(
@@ -74,6 +76,32 @@ export const useAppStore = create<AppState>()(
             ? 'admin-dashboard'
             : 'client-dashboard',
         }),
+
+      revalidateUser: async () => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+        
+        try {
+          const res = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'list_all' })
+          });
+          const data = await res.json();
+          // Find if user is still there and approved. If not, log them out.
+          // In a real app we'd fetch just this user, but list_all works for our demo size.
+          // Note: admin users are not returned by list_all in the current auth implementation,
+          // so we should only invalidate if they are found and suspended/rejected.
+          if (data.data) {
+             const serverUser = data.data.find((u: any) => u.id === currentUser.id);
+             if (serverUser && serverUser.approval_status !== 'approved') {
+                 get().setUser(null);
+             }
+          }
+        } catch (e) {
+          console.error("Failed to revalidate user", e);
+        }
+      },
 
       viewMode: 'auth',
       setViewMode: (mode) => set({ viewMode: mode }),

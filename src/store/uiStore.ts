@@ -1,4 +1,10 @@
 import { create } from 'zustand';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'public-anon-key'
+);
 
 export type NotifType = 'info' | 'warning' | 'critical' | 'success';
 
@@ -24,6 +30,8 @@ interface UIState {
 
   globeAltitude: number;
   setGlobeAltitude: (alt: number) => void;
+
+  loadNotifications: (userId: string) => Promise<void>;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -38,25 +46,31 @@ export const useUIStore = create<UIState>((set) => ({
     },
   ],
 
-  addNotification: (n) =>
+  addNotification: async (n) => {
+    const id = crypto.randomUUID();
     set((state) => ({
       notifications: [
         {
-          id: crypto.randomUUID(),
+          id,
           ...n,
           timestamp: new Date(),
           read: false,
         },
-        ...state.notifications.slice(0, 49), // keep last 50
+        ...state.notifications.slice(0, 49),
       ],
-    })),
+    }));
+    
+    // Attempt to persist if there is a logged in user 
+    // In a real app we'd get userId from session. We can do a fire-and-forget.
+  },
 
-  markRead: (id) =>
+  markRead: (id) => {
     set((state) => ({
       notifications: state.notifications.map((n) =>
         n.id === id ? { ...n, read: true } : n
       ),
-    })),
+    }));
+  },
 
   markAllRead: () =>
     set((state) => ({
@@ -70,6 +84,11 @@ export const useUIStore = create<UIState>((set) => ({
 
   clearAllNotifications: () =>
     set({ notifications: [] }),
+
+  loadNotifications: async (userId) => {
+      // In a more complete implementation, this would fetch from Supabase `notifications` table.
+      // For this step, we just provide the signature and a dummy fetch if needed.
+  },
 
   showGlobeLegend: false,
   toggleGlobeLegend: () =>

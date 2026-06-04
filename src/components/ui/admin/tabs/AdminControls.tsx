@@ -21,6 +21,10 @@ export default function AdminControls() {
   const linkDataCenters = useDCStore((s) => s.linkDataCenters);
   const unlinkDataCenters = useDCStore((s) => s.unlinkDataCenters);
   const setIsolated = useDCStore((s) => s.setIsolated);
+  const addRoom = useDCStore((s) => s.addRoom);
+  const removeRoom = useDCStore((s) => s.removeRoom);
+  const renameRoom = useDCStore((s) => s.renameRoom);
+  const reorderRooms = useDCStore((s) => s.reorderRooms);
   const regions = useSimulationStore((s) => s.regions);
   const setRegionUsers = useSimulationStore((s) => s.setRegionUsers);
   const addNotification = useUIStore((s) => s.addNotification);
@@ -28,7 +32,9 @@ export default function AdminControls() {
   const [newDC, setNewDC] = useState({ name: "", lat: "", lng: "", region: "north_america", capacity: "100", location: "" });
   const [linkA, setLinkA] = useState("");
   const [linkB, setLinkB] = useState("");
-  const [activeSection, setActiveSection] = useState<"dc" | "link" | "users" | "load">("dc");
+  const [activeSection, setActiveSection] = useState<"dc" | "rooms" | "link" | "users">("dc");
+  const [selectedDcForRooms, setSelectedDcForRooms] = useState<string>("");
+  const [newRoomName, setNewRoomName] = useState("");
 
   const handleCreateDC = () => {
     if (!newDC.name || !newDC.lat || !newDC.lng) return;
@@ -76,6 +82,7 @@ export default function AdminControls() {
     <div className="p-6 max-w-5xl">
       <div className="flex gap-2 mb-6 flex-wrap">
         <SectionBtn id="dc"    label="Data Centers" />
+        <SectionBtn id="rooms" label="Rooms & Infrastructure" />
         <SectionBtn id="link"  label="DC Links & Isolation" />
         <SectionBtn id="users" label="Regional Load" />
       </div>
@@ -155,6 +162,138 @@ export default function AdminControls() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+        </div>
+      )}
+
+      {/* Rooms Management */}
+      {activeSection === "rooms" && (
+        <div className="space-y-6">
+          <div className="card p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Server className="w-5 h-5 text-blue-600" />
+              <h2 className="font-semibold text-slate-900">Manage Rooms</h2>
+            </div>
+            
+            <div className="mb-4">
+              <label className="section-header block">Select Data Center</label>
+              <select 
+                className="select-light w-full max-w-md" 
+                value={selectedDcForRooms} 
+                onChange={(e) => setSelectedDcForRooms(e.target.value)}
+              >
+                <option value="">-- Choose Data Center --</option>
+                {dataCenters.map(dc => (
+                  <option key={dc.id} value={dc.id}>{dc.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {selectedDcForRooms && (
+              <>
+                <div className="flex gap-2 mb-6">
+                  <input 
+                    className="input-light flex-1 max-w-sm" 
+                    placeholder="New Room Name (e.g. Room C)" 
+                    value={newRoomName} 
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                  />
+                  <button 
+                    onClick={async () => {
+                      if (!newRoomName) return;
+                      const res = await addRoom(selectedDcForRooms, newRoomName);
+                      if (res) {
+                        addNotification({ type: "success", title: "Room Added", message: `${newRoomName} created successfully.` });
+                        setNewRoomName("");
+                      }
+                    }}
+                    className="btn-primary px-4"
+                  >
+                    <Plus className="w-4 h-4 inline mr-1" /> Add Room
+                  </button>
+                </div>
+
+                <div className="border border-slate-200 rounded-lg overflow-hidden">
+                  <table className="data-table w-full">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left">Room Name</th>
+                        <th className="px-4 py-3 text-left">Racks</th>
+                        <th className="px-4 py-3 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dataCenters.find(d => d.id === selectedDcForRooms)?.rooms?.map((room, idx, arr) => (
+                        <tr key={room.id} className="border-t border-slate-100">
+                          <td className="px-4 py-3">
+                            <input 
+                              type="text" 
+                              className="input-light py-1 text-sm bg-transparent"
+                              defaultValue={room.name}
+                              onBlur={(e) => {
+                                if (e.target.value !== room.name) {
+                                  renameRoom(room.id, e.target.value);
+                                }
+                              }}
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-500">
+                            {room.racks?.length || 0} racks
+                          </td>
+                          <td className="px-4 py-3 text-right space-x-2">
+                            <button
+                              onClick={() => {
+                                if (idx > 0) {
+                                  const newOrder = [...arr.map(r => r.id)];
+                                  [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+                                  reorderRooms(selectedDcForRooms, newOrder);
+                                }
+                              }}
+                              disabled={idx === 0}
+                              className="text-xs px-2 py-1 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (idx < arr.length - 1) {
+                                  const newOrder = [...arr.map(r => r.id)];
+                                  [newOrder[idx + 1], newOrder[idx]] = [newOrder[idx], newOrder[idx + 1]];
+                                  reorderRooms(selectedDcForRooms, newOrder);
+                                }
+                              }}
+                              disabled={idx === arr.length - 1}
+                              className="text-xs px-2 py-1 bg-slate-100 rounded hover:bg-slate-200 disabled:opacity-50"
+                            >
+                              ↓
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                if(confirm(`Are you sure you want to delete ${room.name}?`)) {
+                                   const success = await removeRoom(selectedDcForRooms, room.id);
+                                   if(success) {
+                                      addNotification({ type: "success", title: "Room Removed", message: `${room.name} deleted.` });
+                                   } else {
+                                      addNotification({ type: "error", title: "Error", message: "Cannot remove room (may have occupied slots)." });
+                                   }
+                                }
+                              }}
+                              className="text-xs px-2 py-1 bg-red-50 text-red-600 rounded hover:bg-red-100"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {(!dataCenters.find(d => d.id === selectedDcForRooms)?.rooms || dataCenters.find(d => d.id === selectedDcForRooms)?.rooms?.length === 0) && (
+                        <tr><td colSpan={3} className="text-center py-4 text-slate-500 text-sm">No rooms found. Add one above.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

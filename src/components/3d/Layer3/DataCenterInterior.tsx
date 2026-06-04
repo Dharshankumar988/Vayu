@@ -1,27 +1,50 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, PerspectiveCamera, Html } from "@react-three/drei";
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useState, useMemo, useRef } from "react";
 import { useAppStore } from "@/store";
 import { useDCStore } from "@/store/dcStore";
 import type { Room, Rack, ServerSlot } from "@/store/dcStore";
 import ServerRackCuboid from "./ServerRack";
+import * as THREE from "three";
 
-function RoomDivider() {
+function RoomFloor() {
   return (
-    <mesh position={[0, 2, 0]}>
-      <boxGeometry args={[0.15, 4, 8]} />
-      <meshStandardMaterial color="#94a3b8" transparent opacity={0.4} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+      <planeGeometry args={[18, 14]} />
+      <meshStandardMaterial color="#1e293b" metalness={0.4} roughness={0.6} />
     </mesh>
   );
 }
 
-function Floor() {
+function NeonCable({ numRooms }: { numRooms: number }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame(({ clock }) => {
+    if (meshRef.current && meshRef.current.material) {
+      // Pulsating data flow effect
+      const mat = meshRef.current.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity = 2.0 + Math.sin(clock.elapsedTime * 5.0) * 1.5;
+    }
+  });
+
+  if (numRooms <= 1) return null;
+  const length = (numRooms - 1) * 20;
+  const zCenter = length / 2;
+
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-      <planeGeometry args={[22, 12]} />
-      <meshStandardMaterial color="#1e293b" metalness={0.3} roughness={0.7} />
+    <mesh ref={meshRef} position={[0, 0.2, zCenter]} rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.08, 0.08, length, 16]} />
+      <meshStandardMaterial
+        color="#00f3ff"
+        emissive="#00f3ff"
+        emissiveIntensity={3}
+        transparent
+        opacity={0.9}
+        roughness={0.1}
+        metalness={0.8}
+      />
     </mesh>
   );
 }
@@ -29,7 +52,7 @@ function Floor() {
 function RoomLabel({ text, position }: { text: string; position: [number, number, number] }) {
   return (
     <Html position={position} center>
-      <div className="px-2 py-1 bg-slate-800/80 border border-slate-600 rounded text-xs text-slate-300 font-medium pointer-events-none whitespace-nowrap">
+      <div className="px-3 py-1.5 bg-slate-800/90 border border-slate-600 rounded text-sm text-slate-200 font-bold pointer-events-none whitespace-nowrap shadow-lg">
         {text}
       </div>
     </Html>
@@ -40,7 +63,6 @@ export default function DataCenterInterior() {
   const user = useAppStore((s) => s.user);
   const selectedDCId = useAppStore((s) => s.selectedDataCenterId);
   const dataCenters = useDCStore((s) => s.dataCenters);
-  const [selectedRoomIdx, setSelectedRoomIdx] = useState(0);
   const selectedSlotId = useAppStore((s) => s.selectedSlotId);
   const setSelectedSlotId = useAppStore((s) => s.setSelectedSlotId);
 
@@ -81,73 +103,53 @@ export default function DataCenterInterior() {
 
   if (!dc) return <div className="text-white p-8">No data center selected.</div>;
 
-  const currentRoom = rooms[selectedRoomIdx];
-  const isLeftRoom  = selectedRoomIdx === 0;
-
   return (
     <div className="absolute inset-0 z-0" style={{ background: '#0f172a' }}>
-      {/* 2D overlay: room selector + slot info */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-        {rooms.map((room, idx) => (
-          <button
-            key={room.id}
-            onClick={() => setSelectedRoomIdx(idx)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              idx === selectedRoomIdx
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-slate-700/80 text-slate-300 hover:bg-slate-600'
-            }`}
-          >
-            {room.name}
-          </button>
-        ))}
-      </div>
-
-      {/* DC name */}
+      {/* DC name top left */}
       <div className="absolute top-4 left-4 z-20">
-        <div className="px-3 py-1.5 bg-slate-800/90 border border-slate-700 rounded-lg">
-          <p className="text-xs text-slate-400">Data Center</p>
-          <p className="text-sm font-semibold text-white">{dc.name}</p>
+        <div className="px-4 py-2 bg-slate-800/90 border border-slate-700 rounded-xl shadow-xl">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Data Center</p>
+          <p className="text-lg font-bold text-white">{dc.name}</p>
         </div>
       </div>
 
       {/* Slot info panel */}
       {selectedSlot && (
-        <div className="absolute top-4 right-4 z-20 w-60 bg-slate-900/95 border border-slate-700 rounded-xl p-4 animate-slide-in-right">
-          <div className="flex justify-between items-start mb-3">
-            <h4 className="text-sm font-semibold text-white">Slot {selectedSlot.position}</h4>
-            <button onClick={() => setSelectedSlot(null)} className="text-slate-400 hover:text-white text-xs">✕</button>
+        <div className="absolute top-4 right-4 z-20 w-64 bg-slate-900/95 border border-blue-500/30 rounded-xl p-5 shadow-2xl animate-slide-in-right backdrop-blur-md">
+          <div className="flex justify-between items-start mb-4">
+            <h4 className="text-md font-bold text-white">Slot {selectedSlot.position}</h4>
+            <button onClick={() => setSelectedSlotId(null)} className="text-slate-400 hover:text-white text-sm">✕</button>
           </div>
-          <div className="space-y-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Status</span>
-              <span className={`font-medium ${
-                selectedSlot.status === 'available' ? 'text-green-400'
-                : selectedSlot.status === 'occupied' ? 'text-blue-400'
-                : 'text-yellow-400'
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-slate-400 font-medium">Status</span>
+              <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${
+                selectedSlot.status === 'available' ? 'bg-green-500/20 text-green-400'
+                : selectedSlot.status === 'occupied' ? 'bg-blue-500/20 text-blue-400'
+                : 'bg-yellow-500/20 text-yellow-400'
               }`}>{selectedSlot.status}</span>
             </div>
             {selectedSlot.server_name && (
-              <div className="flex justify-between">
+              <div className="flex justify-between border-t border-slate-700/50 pt-2">
                 <span className="text-slate-400">Server</span>
                 <span className="text-white font-mono">{selectedSlot.server_name}</span>
               </div>
             )}
             {selectedSlot.client_name && (
-              <div className="flex justify-between">
+              <div className="flex justify-between border-t border-slate-700/50 pt-2">
                 <span className="text-slate-400">Client</span>
-                <span className="text-white">{selectedSlot.client_name}</span>
+                <span className="text-white text-right">{selectedSlot.client_name}</span>
               </div>
             )}
             {selectedSlot.status === 'occupied' && (
-              <>
+              <div className="pt-2 mt-2 border-t border-slate-700/50 space-y-2">
                 <div className="flex justify-between">
                   <span className="text-slate-400">CPU</span>
-                  <span className="text-white">{(selectedSlot.cpu_util * 100).toFixed(0)}%</span>
+                  <span className="text-white font-mono">{(selectedSlot.cpu_util * 100).toFixed(0)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Memory</span>
-                  <span className="text-white">{(selectedSlot.mem_util * 100).toFixed(0)}%</span>
+                  <span className="text-white font-mono">{(selectedSlot.mem_util * 100).toFixed(0)}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Health</span>
@@ -157,45 +159,59 @@ export default function DataCenterInterior() {
                     : 'text-red-400'
                   }`}>{selectedSlot.health}</span>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
       )}
 
       <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[0, 6, 14]} fov={55} />
-        <OrbitControls target={[0, 1, 0]} minDistance={4} maxDistance={22} maxPolarAngle={Math.PI * 0.55} />
+        {/* Adjusted camera to see multiple rooms better */}
+        <PerspectiveCamera makeDefault position={[-15, 12, 20]} fov={50} />
+        <OrbitControls target={[0, 0, (rooms.length - 1) * 10]} minDistance={5} maxDistance={60} maxPolarAngle={Math.PI * 0.48} />
 
         {/* Lighting */}
-        <ambientLight intensity={0.6} color="#e2e8f0" />
-        <directionalLight position={[8, 12, 8]} intensity={1.4} color="#ffffff" castShadow />
-        <pointLight position={[-6, 4, -4]} intensity={0.8} color="#60a5fa" />
-        <pointLight position={[6, 4, 4]} intensity={0.6} color="#34d399" />
+        <ambientLight intensity={0.5} color="#cbd5e1" />
+        <directionalLight position={[10, 20, 10]} intensity={1.5} color="#ffffff" castShadow />
+        <pointLight position={[-10, 10, -10]} intensity={0.8} color="#60a5fa" />
+        <pointLight position={[10, 10, 10]} intensity={0.6} color="#34d399" />
 
         <Suspense fallback={null}>
-          <Floor />
-          <RoomDivider />
+          
+          {/* Central Pulsating Neon Cable connecting all rooms */}
+          <NeonCable numRooms={rooms.length} />
 
-          {/* Room Label */}
-          <RoomLabel text={`${currentRoom?.name ?? 'Room'} — ${dc.name}`} position={[0, 5.5, 0]} />
+          {/* Render All Rooms */}
+          {rooms.map((room, roomIdx) => {
+            const zOffset = roomIdx * 20;
 
-          {/* Racks in current room — 6 racks in 2 rows of 3 */}
-          {currentRoom?.racks.map((rack, i) => {
-            const col = i % 3;
-            const row = Math.floor(i / 3);
-            const x = (col - 1) * 4.5 + (isLeftRoom ? -5.5 : 5.5);
-            const z = row === 0 ? -2.5 : 2.5;
             return (
-              <ServerRackCuboid
-                key={rack.id}
-                position={[x, 0, z]}
-                rack={rack}
-                onSlotClick={(slot) => setSelectedSlotId(slot.id)}
-                currentUserId={user?.id ?? null}
-              />
+              <group key={room.id} position={[0, 0, zOffset]}>
+                <RoomFloor />
+                <RoomLabel text={room.name} position={[0, 6, 0]} />
+
+                {/* Racks in the room */}
+                {room.racks.map((rack, i) => {
+                  const col = i % 3;
+                  const row = Math.floor(i / 3);
+                  // Position racks in a grid: X spacing 4.5, Z spacing 5
+                  const x = (col - 1) * 4.5;
+                  const z = row === 0 ? -3.5 : 3.5;
+                  
+                  return (
+                    <ServerRackCuboid
+                      key={rack.id}
+                      position={[x, 0, z]}
+                      rack={rack}
+                      onSlotClick={(slot) => setSelectedSlotId(slot.id)}
+                      currentUserId={user?.id ?? null}
+                    />
+                  );
+                })}
+              </group>
             );
           })}
+
         </Suspense>
       </Canvas>
     </div>
