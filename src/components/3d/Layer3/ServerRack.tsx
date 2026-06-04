@@ -84,11 +84,11 @@ function SlotMesh({
 
   const emissiveIntensity = useMemo(() => {
     if (clicked) return 2.0;
-    if (hovered) return 1.2;
+    if (hovered) return 1.5;
     if (isSelected) return 1.5;
-    if (slot.status === 'available') return 0.3;
-    if (isOwned) return 0.5;
-    return 0.1;
+    if (slot.status === 'available') return 0.6;
+    if (isOwned) return 0.8;
+    return 0.3;
   }, [hovered, clicked, slot.status, isOwned, isSelected]);
 
   return (
@@ -112,8 +112,8 @@ function SlotMesh({
           color={color}
           emissive={emissive}
           emissiveIntensity={emissiveIntensity}
-          roughness={0.3}
-          metalness={0.8}
+          roughness={0.7}
+          metalness={0.2}
         />
         {/* Subtle metallic outline to make slot clearly distinguishable */}
         <lineSegments>

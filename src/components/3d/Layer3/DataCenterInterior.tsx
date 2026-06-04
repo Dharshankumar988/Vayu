@@ -268,6 +268,7 @@ export default function DataCenterInterior() {
                         rack={rack}
                         onSlotClick={(slot) => toggleSelectedSlotId(slot.id)}
                         currentUserId={user?.id ?? null}
+                        selectedSlotIds={selectedSlotIds}
                       />
                       <RackCable x={x} z={z} />
                     </group>
