@@ -227,9 +227,9 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       onPointerOver={(e) => { e.stopPropagation(); setRackHovered(true); }}
       onPointerOut={() => setRackHovered(false)}
     >
-      {/* Main body panels — light blue shades */}
-      <mesh position={[0, RACK_H / 2, 0]} castShadow>
-        <boxGeometry args={[RACK_W, RACK_H, RACK_D]} />
+      {/* Main body panel — back plate only so slots are visible */}
+      <mesh position={[0, RACK_H / 2, -RACK_D / 2 + 0.05]} castShadow>
+        <boxGeometry args={[RACK_W, RACK_H, 0.1]} />
         <meshStandardMaterial color="#bfdbfe" roughness={0.9} metalness={0.1} />
       </mesh>
 
