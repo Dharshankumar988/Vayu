@@ -190,6 +190,7 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
             if (dc.load > 0.70 || dc.status === 'warning') color = '#f59e0b'; // warning = yellow
             if (dc.load > 0.88 || dc.status === 'critical') color = '#ef4444'; // critical = red
             if (dc.status === 'offline') color = '#6b7280'; // offline = gray
+            if (dc.is_isolated) color = '#ffd700'; // isolated = gold
 
             // Check active simulations
             const simStore = useSimulationStore.getState();
@@ -337,6 +338,7 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
                 { color: '#22c55e', label: 'Healthy' },
                 { color: '#f59e0b', label: 'High Load' },
                 { color: '#ef4444', label: 'Critical / Attack' },
+                { color: '#ffd700', label: 'Isolated (Private)' },
               ].map((item) => (
                 <div key={item.label} className="flex items-center gap-2 mb-1.5">
                   <div className="w-2.5 h-2.5 rotate-45" style={{ background: item.color, boxShadow: `0 0 6px ${item.color}` }} />
