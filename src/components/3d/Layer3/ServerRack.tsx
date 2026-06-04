@@ -134,7 +134,7 @@ function SlotMesh({
 
       {/* Hover tooltip */}
       {hovered && (
-        <Html position={[position[0], position[1] + 0.35, position[2] + 0.3]} center style={{ pointerEvents: 'none', zIndex: 50 }}>
+        <Html position={[position[0] + 1.2, position[1], position[2] + 0.2]} center style={{ pointerEvents: 'none', zIndex: 50 }}>
           <div className="w-56 bg-slate-900/90 backdrop-blur-md border border-slate-700 shadow-2xl rounded-xl p-3 text-white">
             <div className="flex justify-between items-center mb-2">
               <span className="text-xs font-bold text-slate-400">
