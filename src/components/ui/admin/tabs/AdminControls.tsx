@@ -29,7 +29,7 @@ export default function AdminControls() {
   const setRegionUsers = useSimulationStore((s) => s.setRegionUsers);
   const addNotification = useUIStore((s) => s.addNotification);
 
-  const [newDC, setNewDC] = useState({ name: "", lat: "", lng: "", region: "north_america", capacity: "100", location: "" });
+  const [newDC, setNewDC] = useState({ name: "", lat: "", lng: "", region: "north_america", location: "", numRooms: 1, racksPerRoom: 4 });
   const [linkA, setLinkA] = useState("");
   const [linkB, setLinkB] = useState("");
   const [activeSection, setActiveSection] = useState<"dc" | "rooms" | "link" | "users">("dc");
@@ -38,6 +38,42 @@ export default function AdminControls() {
 
   const handleCreateDC = () => {
     if (!newDC.name || !newDC.lat || !newDC.lng) return;
+    
+    // Generate actual infrastructure based on input
+    const generatedRooms = [];
+    let slotCounter = 1;
+    for (let r = 0; r < newDC.numRooms; r++) {
+      const room = {
+        id: `room-${Date.now()}-${r}`,
+        name: `Room ${String.fromCharCode(65 + r)}`,
+        racks: [] as any[],
+      };
+      for (let k = 0; k < newDC.racksPerRoom; k++) {
+        const rack = {
+          id: `rack-${Date.now()}-${r}-${k}`,
+          name: `Rack ${k + 1}`,
+          slots: [] as any[],
+        };
+        for (let s = 0; s < 4; s++) { // 4 slots per rack
+          rack.slots.push({
+            id: `slot-${Date.now()}-${r}-${k}-${s}`,
+            position: slotCounter++,
+            status: "available",
+            client_id: null,
+            client_name: null,
+            server_name: null,
+            cpu_util: 0,
+            mem_util: 0,
+            health: "healthy",
+          });
+        }
+        room.racks.push(rack);
+      }
+      generatedRooms.push(room);
+    }
+    
+    const calculatedCapacity = newDC.numRooms * newDC.racksPerRoom * 4;
+
     const dc = {
       id: `dc-custom-${Date.now()}`,
       name: newDC.name,
@@ -48,14 +84,14 @@ export default function AdminControls() {
       status: "healthy" as const,
       load: 0,
       health_score: 100,
-      total_capacity: parseInt(newDC.capacity),
+      total_capacity: calculatedCapacity,
       is_isolated: false,
       linked_dc_ids: [],
-      rooms: [],
+      rooms: generatedRooms,
     };
     addDataCenter(dc);
-    addNotification({ type: "success", title: "Data Center Created", message: `${newDC.name} added to ${newDC.region}.` });
-    setNewDC({ name: "", lat: "", lng: "", region: "north_america", capacity: "100", location: "" });
+    addNotification({ type: "success", title: "Data Center Created", message: `${newDC.name} added to ${newDC.region} with ${calculatedCapacity} slots.` });
+    setNewDC({ name: "", lat: "", lng: "", region: "north_america", location: "", numRooms: 1, racksPerRoom: 4 });
   };
 
   const handleLink = () => {
@@ -119,12 +155,16 @@ export default function AdminControls() {
                 </select>
               </div>
               <div>
-                <label className="section-header block">Capacity (servers)</label>
-                <input className="input-light" type="number" placeholder="100" value={newDC.capacity} onChange={(e) => setNewDC({ ...newDC, capacity: e.target.value })} />
+                <label className="section-header block">Number of Rooms (Max 3)</label>
+                <input className="input-light" type="number" min="1" max="3" placeholder="1" value={newDC.numRooms} onChange={(e) => setNewDC({ ...newDC, numRooms: Math.min(3, Math.max(1, parseInt(e.target.value) || 1)) })} />
+              </div>
+              <div>
+                <label className="section-header block">Racks per Room (Max 6)</label>
+                <input className="input-light" type="number" min="1" max="6" placeholder="4" value={newDC.racksPerRoom} onChange={(e) => setNewDC({ ...newDC, racksPerRoom: Math.min(6, Math.max(1, parseInt(e.target.value) || 1)) })} />
               </div>
             </div>
             <button onClick={handleCreateDC} disabled={!newDC.name || !newDC.lat || !newDC.lng} className="btn-primary mt-4 px-6 py-2.5">
-              Create Data Center
+              Create Data Center ({newDC.numRooms * newDC.racksPerRoom * 4} Slots)
             </button>
           </div>
 

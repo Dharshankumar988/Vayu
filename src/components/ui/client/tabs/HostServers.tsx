@@ -33,13 +33,17 @@ export default function HostServers() {
   const [step, setStep] = useState<"region" | "dc" | "interior" | "billing" | "success">("region");
   const [selectedRegion, setSelectedRegion] = useState("");
   const [selectedDCId, setSelectedDCId] = useState("");
-  const selectedSlotId = useAppStore((s) => s.selectedSlotId);
-  const setSelectedSlotId = useAppStore((s) => s.setSelectedSlotId);
+  const selectedSlotIds = useAppStore((s) => s.selectedSlotIds);
+  const clearSelectedSlots = useAppStore((s) => s.clearSelectedSlots);
   const setSelectedRegionId = useAppStore((s) => s.setSelectedRegionId);
   const [serverName, setServerName] = useState("");
   const [duration, setDuration] = useState(1);
   const [paying, setPaying] = useState(false);
   const [activeTab, setActiveTab] = useState<"host" | "manage">("host");
+  
+  // Deletion modal state
+  const [terminatingSlotId, setTerminatingSlotId] = useState<string | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
 
   const regionDCs = useMemo(
     () => dataCenters.filter((dc) => dc.region === selectedRegion && !dc.is_isolated),
@@ -69,7 +73,8 @@ export default function HostServers() {
 
   const SLOT_PRICE = 120; // $120/slot/month
   const discount = duration >= 12 ? 0.2 : duration >= 6 ? 0.1 : 0;
-  const totalCost = SLOT_PRICE * duration * (1 - discount);
+  const slotCount = selectedSlotIds.length || 1;
+  const totalCost = SLOT_PRICE * duration * slotCount * (1 - discount);
 
   const handleSelectDC = (dcId: string) => {
     setSelectedDCId(dcId);
@@ -80,14 +85,14 @@ export default function HostServers() {
   const handlePayment = async () => {
     setPaying(true);
     await new Promise((r) => setTimeout(r, 2000));
-    // Update slot status in store
-    if (selectedSlotId) {
-      updateSlotStatus(selectedSlotId, "occupied", user?.id, user?.full_name, serverName || "My Server");
-    }
+    // Update all selected slots in store
+    selectedSlotIds.forEach((id) => {
+      updateSlotStatus(id, "occupied", user?.id, user?.full_name, serverName || "My Server");
+    });
     addNotification({
       type: "success",
-      title: "Server Hosted!",
-      message: `${serverName || "Your server"} is now live in ${selectedDC?.name}.`,
+      title: "Servers Hosted!",
+      message: `${serverName || "Your servers"} are now live in ${selectedDC?.name}.`,
     });
     setPaying(false);
     setStep("success");
@@ -110,7 +115,7 @@ export default function HostServers() {
         <button
           onClick={() => {
             setStep("region");
-            setSelectedSlotId("");
+            clearSelectedSlots();
             setSelectedDCId("");
             setSelectedRegion("");
             setSelectedRegionId(null);
@@ -139,7 +144,7 @@ export default function HostServers() {
               ["Data Center", selectedDC?.name],
               ["Region", selectedRegion.replace("_", " ")],
               ["Server Name", serverName || "My Server"],
-              ["Slot Count", "1"],
+              ["Slot Count", selectedSlotIds.length.toString()],
               ["Rate", `$${SLOT_PRICE}/slot/month`],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between text-sm">
@@ -216,10 +221,10 @@ export default function HostServers() {
               <p className="text-xs text-slate-400">{availableSlots} slots available — click a green slot to select</p>
             </div>
           </div>
-          {selectedSlotId && (
+          {selectedSlotIds.length > 0 && (
             <button onClick={() => setStep("billing")}
               className="btn-primary flex items-center gap-2 px-5 py-2">
-              Continue to Billing <ChevronRight className="w-4 h-4" />
+              Deploy {selectedSlotIds.length} Slot{selectedSlotIds.length > 1 ? 's' : ''} <ChevronRight className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -230,9 +235,16 @@ export default function HostServers() {
     );
   }
 
-  const handleTerminateServer = (slotId: string) => {
-    updateSlotStatus(slotId, "available", null, null, null);
+  const handleTerminateServer = () => {
+    if (!terminatingSlotId) return;
+    if (deletePassword !== "demo") { // Assume demo password is "demo"
+      addNotification({ type: "error", title: "Authentication Failed", message: "Incorrect password. Termination aborted." });
+      return;
+    }
+    updateSlotStatus(terminatingSlotId, "available", null, null, null);
     addNotification({ type: "success", title: "Server Terminated", message: "Your server instance has been shut down and billing stopped." });
+    setTerminatingSlotId(null);
+    setDeletePassword("");
   };
 
   if (step === "dc") {
@@ -361,12 +373,34 @@ export default function HostServers() {
                       <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Status</p>
                       <p className={`font-medium ${slot.health === "healthy" ? "text-green-600" : "text-red-600"}`}>{slot.health}</p>
                     </div>
-                    <button onClick={() => handleTerminateServer(slot.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors border border-transparent hover:border-red-100" title="Terminate Server">
+                    <button onClick={() => setTerminatingSlotId(slot.id)} className="p-3 text-red-500 hover:bg-red-50 hover:text-red-700 rounded-xl transition-colors border border-transparent hover:border-red-100" title="Terminate Server">
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
               ))
+            )}
+            
+            {/* Termination Modal */}
+            {terminatingSlotId && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <div className="bg-white p-6 rounded-2xl max-w-sm w-full shadow-2xl">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">Confirm Deletion</h3>
+                  <p className="text-sm text-slate-500 mb-4">This action cannot be undone. All data on this server will be lost.</p>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Enter your password</label>
+                  <input
+                    type="password"
+                    placeholder="Enter 'demo' to confirm"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg mb-6"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                  />
+                  <div className="flex justify-end gap-3">
+                    <button onClick={() => { setTerminatingSlotId(null); setDeletePassword(""); }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors">Cancel</button>
+                    <button onClick={handleTerminateServer} disabled={!deletePassword} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50">Terminate</button>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         )}

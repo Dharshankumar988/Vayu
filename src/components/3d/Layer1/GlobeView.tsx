@@ -64,18 +64,29 @@ export default function GlobeView({ onDataCenterClick }: { onDataCenterClick?: (
     } else {
       // Zoom out to global view
       globeRef.current.pointOfView({ altitude: 2.8 }, 1800);
-      // Wait for zoom animation to finish before starting rotation again
-      setTimeout(() => {
-        if (globeRef.current) {
-          const currentCtrl = globeRef.current.controls();
-          if (currentCtrl && !useAppStore.getState().selectedRegionId) {
-            currentCtrl.autoRotate = true;
-            currentCtrl.autoRotateSpeed = 0.8; // Spin a bit faster so it's noticeable
-          }
-        }
-      }, 1850);
     }
   }, [selectedRegionId, regions]);
+
+  // Robustly enforce free spin when no region is selected
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!globeRef.current) return;
+      const ctrl = globeRef.current.controls();
+      if (!ctrl) return;
+      
+      const regionId = useAppStore.getState().selectedRegionId;
+      if (!regionId) {
+        if (!ctrl.autoRotate) {
+          ctrl.autoRotate = true;
+          ctrl.autoRotateSpeed = 0.8;
+        }
+      } else {
+        ctrl.autoRotate = false;
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Animate glow rings on pyramids
   useEffect(() => {

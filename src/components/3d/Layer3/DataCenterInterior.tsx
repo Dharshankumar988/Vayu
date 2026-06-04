@@ -118,8 +118,9 @@ export default function DataCenterInterior() {
   const user = useAppStore((s) => s.user);
   const selectedDCId = useAppStore((s) => s.selectedDataCenterId);
   const dataCenters = useDCStore((s) => s.dataCenters);
-  const selectedSlotId = useAppStore((s) => s.selectedSlotId);
-  const setSelectedSlotId = useAppStore((s) => s.setSelectedSlotId);
+  const selectedSlotIds = useAppStore((s) => s.selectedSlotIds);
+  const toggleSelectedSlotId = useAppStore((s) => s.toggleSelectedSlotId);
+  const clearSelectedSlots = useAppStore((s) => s.clearSelectedSlots);
 
   const dc = useMemo(() => {
     if (selectedDCId) return dataCenters.find((d) => d.id === selectedDCId);
@@ -127,16 +128,17 @@ export default function DataCenterInterior() {
   }, [selectedDCId, dataCenters]);
 
   const selectedSlot = useMemo(() => {
-    if (!selectedSlotId || !dc) return null;
+    if (selectedSlotIds.length === 0 || !dc) return null;
+    const lastId = selectedSlotIds[selectedSlotIds.length - 1];
     for (const room of dc.rooms) {
       for (const rack of room.racks) {
         for (const slot of rack.slots) {
-          if (slot.id === selectedSlotId) return slot;
+          if (slot.id === lastId) return slot;
         }
       }
     }
     return null;
-  }, [selectedSlotId, dc]);
+  }, [selectedSlotIds, dc]);
 
   const rooms = useMemo(() => {
     if (!dc || !user) return [];
@@ -159,7 +161,7 @@ export default function DataCenterInterior() {
   if (!dc) return <div className="text-white p-8">No data center selected.</div>;
 
   return (
-    <div className="absolute inset-0 z-0" style={{ background: '#0f172a' }}>
+    <div className="absolute inset-0 z-0" style={{ background: '#bdd8f2' }}>
       {/* DC name top left */}
       <div className="absolute top-4 left-4 z-20">
         <div className="px-4 py-2 bg-slate-800/90 border border-slate-700 rounded-xl shadow-xl">
@@ -172,8 +174,13 @@ export default function DataCenterInterior() {
       {selectedSlot && (
         <div className="absolute top-4 right-4 z-20 w-64 bg-slate-900/95 border border-blue-500/30 rounded-xl p-5 shadow-2xl animate-slide-in-right backdrop-blur-md">
           <div className="flex justify-between items-start mb-4">
-            <h4 className="text-md font-bold text-white">Slot {selectedSlot.position}</h4>
-            <button onClick={() => setSelectedSlotId(null)} className="text-slate-400 hover:text-white text-sm">✕</button>
+            <div>
+              <h4 className="text-md font-bold text-white">Slot {selectedSlot.position}</h4>
+              {selectedSlotIds.length > 1 && (
+                <p className="text-xs text-blue-400 font-medium">({selectedSlotIds.length} slots selected)</p>
+              )}
+            </div>
+            <button onClick={() => clearSelectedSlots()} className="text-slate-400 hover:text-white text-sm">✕</button>
           </div>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center">
@@ -259,7 +266,7 @@ export default function DataCenterInterior() {
                       <ServerRackCuboid
                         position={[x, 0, z]}
                         rack={rack}
-                        onSlotClick={(slot) => setSelectedSlotId(slot.id)}
+                        onSlotClick={(slot) => toggleSelectedSlotId(slot.id)}
                         currentUserId={user?.id ?? null}
                       />
                       <RackCable x={x} z={z} />

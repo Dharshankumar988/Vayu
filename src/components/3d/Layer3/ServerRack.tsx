@@ -93,7 +93,7 @@ function SlotMesh({
         onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
         onPointerOut={() => setHovered(false)}
       >
-        <boxGeometry args={[0.85, 0.45, 0.55]} />
+        <boxGeometry args={[0.85, 0.42, 0.55]} />
         <meshStandardMaterial
           color={color}
           emissive={emissive}
@@ -101,11 +101,16 @@ function SlotMesh({
           roughness={0.3}
           metalness={0.8}
         />
+        {/* Subtle metallic outline to make slot clearly distinguishable */}
+        <lineSegments>
+          <edgesGeometry args={[new THREE.BoxGeometry(0.85, 0.42, 0.55)]} />
+          <lineBasicMaterial color="#ffffff" transparent opacity={0.25} />
+        </lineSegments>
       </mesh>
 
       {/* LED indicator strip on the right side */}
       <mesh position={[position[0] + 0.42, position[1], position[2]]}>
-        <boxGeometry args={[0.02, 0.4, 0.1]} />
+        <boxGeometry args={[0.02, 0.38, 0.1]} />
         <meshStandardMaterial
           color={color}
           emissive={emissive}

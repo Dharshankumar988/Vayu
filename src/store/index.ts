@@ -57,8 +57,9 @@ interface AppState {
   selectedRackId: string | null;
   setSelectedRackId: (id: string | null) => void;
 
-  selectedSlotId: string | null;
-  setSelectedSlotId: (id: string | null) => void;
+  selectedSlotIds: string[];
+  toggleSelectedSlotId: (id: string) => void;
+  clearSelectedSlots: () => void;
 
   revalidateUser: () => Promise<void>;
 }
@@ -127,8 +128,16 @@ export const useAppStore = create<AppState>()(
       selectedRackId: null,
       setSelectedRackId: (id) => set({ selectedRackId: id }),
 
-      selectedSlotId: null,
-      setSelectedSlotId: (id) => set({ selectedSlotId: id }),
+      selectedSlotIds: [],
+      toggleSelectedSlotId: (id) => set((state) => {
+        const exists = state.selectedSlotIds.includes(id);
+        if (exists) {
+          return { selectedSlotIds: state.selectedSlotIds.filter(s => s !== id) };
+        } else {
+          return { selectedSlotIds: [...state.selectedSlotIds, id] };
+        }
+      }),
+      clearSelectedSlots: () => set({ selectedSlotIds: [] }),
     }),
     {
       name: 'vayu-app-store',
