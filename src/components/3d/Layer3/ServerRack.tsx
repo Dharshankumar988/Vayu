@@ -234,7 +234,7 @@ export default function ServerRackCabinet({ position, rack, onSlotClick, current
       </mesh>
 
       {/* Front face — tinted glass / perforated mesh look */}
-      <mesh position={[0, RACK_H / 2, RACK_D / 2 + 0.001]}>
+      <mesh position={[0, RACK_H / 2, RACK_D / 2 + 0.001]} raycast={() => null}>
         <planeGeometry args={[RACK_W - 0.1, RACK_H - 0.1]} />
         <meshStandardMaterial
           color="#60a5fa"
