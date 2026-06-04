@@ -23,16 +23,17 @@ export default function RegionalView() {
   const dataCenters = useDCStore((s) => s.dataCenters);
   const dcError = useDCStore((s) => s.error);
   const isLoading = useDCStore((s) => s.isLoading);
+  const isLoaded = useDCStore((s) => s.isLoaded);
   const regions = useSimulationStore((s) => s.regions);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [showGlobe, setShowGlobe] = useState(true);
 
-  // Force load if empty
+  // Force load if not loaded yet
   useEffect(() => {
-    if (dataCenters.length === 0 && !isLoading && !dcError) {
+    if (!isLoaded && !isLoading && !dcError) {
       useDCStore.getState().loadFromServer();
     }
-  }, [dataCenters.length, isLoading, dcError]);
+  }, [isLoaded, isLoading, dcError]);
 
   const regionDCs = dataCenters.filter((dc) => dc.region === selectedRegion);
 
