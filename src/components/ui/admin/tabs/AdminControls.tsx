@@ -164,7 +164,6 @@ export default function AdminControls() {
             </div>
           </div>
         </div>
-        </div>
       )}
 
       {/* Rooms Management */}
