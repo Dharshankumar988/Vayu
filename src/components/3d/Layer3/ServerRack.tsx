@@ -63,9 +63,12 @@ function SlotMesh({
     return { color: '#cbd5e1', emissive: '#94a3b8' }; // Grey for occupied
   }, [slot.status, isOwned, isSelected]);
 
-  // Deterministic values from cpu_util
-  const temperature = useMemo(() => (slot.cpu_util * 30 + 20).toFixed(1), [slot.cpu_util]);
-  const power = useMemo(() => (slot.cpu_util * 300 + 100).toFixed(0), [slot.cpu_util]);
+  // Deterministic values for dummy metrics if not provided by backend
+  const displayCpu = slot.status === 'available' ? 0 : (slot.cpu_util || ((slot.id.charCodeAt(0) % 60) + 15) / 100);
+  const displayMem = slot.status === 'available' ? 0 : (slot.mem_util || ((slot.id.charCodeAt(slot.id.length - 1) % 50) + 30) / 100);
+
+  const temperature = useMemo(() => (displayCpu * 40 + 20).toFixed(1), [displayCpu]);
+  const power = useMemo(() => slot.status === 'available' ? '0' : (displayCpu * 300 + 150).toFixed(0), [displayCpu, slot.status]);
 
   // Hover elevation + click pulse animation
   useFrame((_state, delta) => {
@@ -168,11 +171,11 @@ function SlotMesh({
                   <>
                     <div className="flex justify-between">
                       <span className="text-slate-400">CPU</span>
-                      <span className="text-white">{(slot.cpu_util * 100).toFixed(0)}%</span>
+                      <span className="text-white">{(displayCpu * 100).toFixed(0)}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Memory</span>
-                      <span className="text-white">{(slot.mem_util * 100).toFixed(0)}%</span>
+                      <span className="text-white">{(displayMem * 100).toFixed(0)}%</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">Health</span>
