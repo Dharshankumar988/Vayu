@@ -188,6 +188,8 @@ export const useDCStore = create<DCState>()((set, get) => ({
         lng: dcInput.lng,
         total_capacity: dcInput.total_capacity,
         price_per_slot_month: dcInput.price_per_slot_month ?? 120,
+        numRooms: dcInput.rooms?.length || 1,
+        racksPerRoom: dcInput.rooms?.[0]?.racks?.length || 4,
       });
       // Reload from server to get full nested structure
       await get().loadFromServer();

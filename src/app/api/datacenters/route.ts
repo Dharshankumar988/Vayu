@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       }
 
       case 'create': {
-        const { name, location, region, lat, lng, total_capacity, created_by, price_per_slot_month } = data;
+        const { name, location, region, lat, lng, total_capacity, created_by, price_per_slot_month, numRooms = 1, racksPerRoom = 4 } = data;
         
         // 1. Create DC
         const { data: dc, error: dcError } = await supabase
@@ -123,20 +123,31 @@ export async function POST(req: NextRequest) {
           .single();
         if (dcError) throw dcError;
 
-        // 2. Create default Room A
-        const { data: room, error: roomError } = await supabase
-          .from('rooms')
-          .insert({ data_center_id: dc.id, name: 'Room A', display_order: 0 })
-          .select()
-          .single();
-        if (roomError) throw roomError;
-
-        // 3. Create 6 default racks
-        const racksToInsert = Array.from({ length: 6 }).map((_, i) => ({
-            room_id: room.id,
-            name: `Rack A-${i + 1}`,
+        // 2. Create Rooms based on numRooms
+        const roomsToInsert = Array.from({ length: numRooms }).map((_, i) => ({
+            data_center_id: dc.id,
+            name: `Room ${String.fromCharCode(65 + i)}`,
             display_order: i
         }));
+        const { data: insertedRooms, error: roomsError } = await supabase
+          .from('rooms')
+          .insert(roomsToInsert)
+          .select();
+        if (roomsError) throw roomsError;
+
+        // 3. Create racks for each room based on racksPerRoom
+        const racksToInsert = [];
+        for (let rIndex = 0; rIndex < insertedRooms.length; rIndex++) {
+            const room = insertedRooms[rIndex];
+            const roomLetter = String.fromCharCode(65 + rIndex);
+            for (let i = 0; i < racksPerRoom; i++) {
+                racksToInsert.push({
+                    room_id: room.id,
+                    name: `Rack ${roomLetter}-${i + 1}`,
+                    display_order: i
+                });
+            }
+        }
         
         const { data: insertedRacks, error: racksError } = await supabase
             .from('racks')

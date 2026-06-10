@@ -21,6 +21,7 @@ export default function AdminControls() {
   const linkDataCenters = useDCStore((s) => s.linkDataCenters);
   const unlinkDataCenters = useDCStore((s) => s.unlinkDataCenters);
   const setIsolated = useDCStore((s) => s.setIsolated);
+  const deleteDataCenter = useDCStore((s) => s.deleteDataCenter);
   const addRoom = useDCStore((s) => s.addRoom);
   const removeRoom = useDCStore((s) => s.removeRoom);
   const renameRoom = useDCStore((s) => s.renameRoom);
@@ -155,13 +156,10 @@ export default function AdminControls() {
                 </select>
               </div>
               <div>
-                <label className="section-header block">Number of Rooms (Max 3)</label>
-                <input className="input-light" type="number" min="1" max="3" placeholder="1" value={newDC.numRooms} onChange={(e) => setNewDC({ ...newDC, numRooms: Math.min(3, Math.max(1, parseInt(e.target.value) || 1)) })} />
+                <label className="section-header block">Number of Rooms (Max 6)</label>
+                <input className="input-light" type="number" min="1" max="6" placeholder="1" value={newDC.numRooms} onChange={(e) => setNewDC({ ...newDC, numRooms: Math.min(6, Math.max(1, parseInt(e.target.value) || 1)) })} />
               </div>
-              <div>
-                <label className="section-header block">Racks per Room (Max 6)</label>
-                <input className="input-light" type="number" min="1" max="6" placeholder="4" value={newDC.racksPerRoom} onChange={(e) => setNewDC({ ...newDC, racksPerRoom: Math.min(6, Math.max(1, parseInt(e.target.value) || 1)) })} />
-              </div>
+              {/* Racks per room is fixed to 4 */}
             </div>
             <button onClick={handleCreateDC} disabled={!newDC.name || !newDC.lat || !newDC.lng} className="btn-primary mt-4 px-6 py-2.5">
               Create Data Center ({newDC.numRooms * newDC.racksPerRoom * 4} Slots)
@@ -175,7 +173,7 @@ export default function AdminControls() {
             </div>
             <div className="overflow-x-auto">
               <table className="data-table">
-                <thead><tr><th>Name</th><th>Region</th><th>Location</th><th>Load</th><th>Status</th><th>Isolated</th></tr></thead>
+                <thead><tr><th>Name</th><th>Region</th><th>Location</th><th>Load</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   {dataCenters.map((dc) => (
                     <tr key={dc.id}>
@@ -192,10 +190,20 @@ export default function AdminControls() {
                       </td>
                       <td><span className={`badge ${ dc.status === "healthy" ? "badge-healthy" : dc.status === "warning" ? "badge-warning" : "badge-critical" }`}>{dc.status}</span></td>
                       <td>
-                        <button onClick={() => setIsolated(dc.id, !dc.is_isolated)}
-                          className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ dc.is_isolated ? "border-red-300 bg-red-50 text-red-600" : "border-slate-200 text-slate-500 hover:border-slate-300" }`}>
-                          {dc.is_isolated ? "Isolated" : "Connected"}
-                        </button>
+                        <div className="flex gap-2 items-center">
+                          <button onClick={() => setIsolated(dc.id, !dc.is_isolated)}
+                            className={`text-xs px-2 py-1 rounded-lg border transition-colors ${ dc.is_isolated ? "border-red-300 bg-red-50 text-red-600" : "border-slate-200 text-slate-500 hover:border-slate-300" }`}>
+                            {dc.is_isolated ? "Isolated" : "Connected"}
+                          </button>
+                          <button onClick={() => {
+                            if (confirm(`Are you sure you want to delete ${dc.name}?`)) {
+                              deleteDataCenter(dc.id);
+                            }
+                          }}
+                            className="text-xs px-2 py-1 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
